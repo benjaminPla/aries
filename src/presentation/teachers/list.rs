@@ -60,6 +60,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Teachers
                     state.last_name  = t.last_name.clone();
                     state.email      = t.email.clone();
                     state.phone      = t.phone.clone();
+                    state.notes      = t.notes.clone().unwrap_or_default();
                     state.created_at = t.created_at.with_timezone(&Local).format("%Y-%m-%d %H:%M").to_string();
                     state.updated_at = t.updated_at.with_timezone(&Local).format("%Y-%m-%d %H:%M").to_string();
                     state.editing_id = Some(id);

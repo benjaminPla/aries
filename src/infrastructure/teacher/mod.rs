@@ -28,20 +28,21 @@ impl TeacherPgRepo {
 }
 
 fn row_to_teacher(row: &Row) -> Result<Teacher, TeacherRepoError> {
-    let id:         Uuid          = row.get("id");
-    let first_name: String        = row.get("first_name");
-    let last_name:  String        = row.get("last_name");
-    let phone:      String        = row.get("phone");
-    let email:      String        = row.get("email");
-    let created_at: DateTime<Utc> = row.get("created_at");
-    let updated_at: DateTime<Utc> = row.get("updated_at");
+    let id:         Uuid           = row.get("id");
+    let first_name: String         = row.get("first_name");
+    let last_name:  String         = row.get("last_name");
+    let phone:      String         = row.get("phone");
+    let email:      String         = row.get("email");
+    let notes:      Option<String> = row.get("notes");
+    let created_at: DateTime<Utc>  = row.get("created_at");
+    let updated_at: DateTime<Utc>  = row.get("updated_at");
 
     let email      = Email::new(email).map_err(|e| TeacherRepoError::Database(e.to_string()))?;
     let first_name = FirstName::new(first_name).map_err(|e| TeacherRepoError::Database(e.to_string()))?;
     let last_name  = LastName::new(last_name).map_err(|e| TeacherRepoError::Database(e.to_string()))?;
     let phone      = Phone::new(phone).map_err(|e| TeacherRepoError::Database(e.to_string()))?;
 
-    Ok(Teacher::reconstitute(created_at, email, first_name, id, last_name, phone, updated_at))
+    Ok(Teacher::reconstitute(created_at, email, first_name, id, last_name, notes, phone, updated_at))
 }
 
 impl TeacherRepo for TeacherPgRepo {
@@ -50,14 +51,15 @@ impl TeacherRepo for TeacherPgRepo {
             .lock()
             .unwrap()
             .execute(
-                "INSERT INTO teachers (id, first_name, last_name, phone, email)
-                 VALUES ($1, $2, $3, $4, $5)",
+                "INSERT INTO teachers (id, first_name, last_name, phone, email, notes)
+                 VALUES ($1, $2, $3, $4, $5, $6)",
                 &[
                     &teacher.id(),
                     &teacher.first_name().value(),
                     &teacher.last_name().value(),
                     &teacher.phone().value(),
                     &teacher.email().value(),
+                    &teacher.notes(),
                 ],
             )
             .map_err(|e| TeacherRepoError::Database(e.to_string()))?;
@@ -79,7 +81,7 @@ impl TeacherRepo for TeacherPgRepo {
             .lock()
             .unwrap()
             .query(
-                "SELECT id, first_name, last_name, phone, email, created_at, updated_at
+                "SELECT id, first_name, last_name, phone, email, notes, created_at, updated_at
                  FROM teachers ORDER BY last_name, first_name",
                 &[],
             )
@@ -92,7 +94,7 @@ impl TeacherRepo for TeacherPgRepo {
             .lock()
             .unwrap()
             .query_opt(
-                "SELECT id, first_name, last_name, phone, email, created_at, updated_at
+                "SELECT id, first_name, last_name, phone, email, notes, created_at, updated_at
                  FROM teachers WHERE id = $1",
                 &[&id],
             )
@@ -107,13 +109,14 @@ impl TeacherRepo for TeacherPgRepo {
             .unwrap()
             .execute(
                 "UPDATE teachers
-                 SET first_name = $1, last_name = $2, phone = $3, email = $4
-                 WHERE id = $5",
+                 SET first_name = $1, last_name = $2, phone = $3, email = $4, notes = $5
+                 WHERE id = $6",
                 &[
                     &teacher.first_name().value(),
                     &teacher.last_name().value(),
                     &teacher.phone().value(),
                     &teacher.email().value(),
+                    &teacher.notes(),
                     &teacher.id(),
                 ],
             )

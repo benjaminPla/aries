@@ -16,6 +16,7 @@ pub struct Teacher {
     first_name: FirstName,
     id:         Uuid,
     last_name:  LastName,
+    notes:      Option<String>,
     phone:      Phone,
     updated_at: DateTime<Utc>,
 }
@@ -25,6 +26,7 @@ impl Teacher {
         email:      Email,
         first_name: FirstName,
         last_name:  LastName,
+        notes:      Option<String>,
         phone:      Phone,
     ) -> Self {
         let now = Utc::now();
@@ -34,6 +36,7 @@ impl Teacher {
             first_name,
             id:         Uuid::new_v4(),
             last_name,
+            notes,
             phone,
             updated_at: now,
         }
@@ -45,10 +48,11 @@ impl Teacher {
         first_name: FirstName,
         id:         Uuid,
         last_name:  LastName,
+        notes:      Option<String>,
         phone:      Phone,
         updated_at: DateTime<Utc>,
     ) -> Self {
-        Self { created_at, email, first_name, id, last_name, phone, updated_at }
+        Self { created_at, email, first_name, id, last_name, notes, phone, updated_at }
     }
 
     // ── Mutations ────────────────────────────────────────────────────────────
@@ -58,11 +62,13 @@ impl Teacher {
         email:      Email,
         first_name: FirstName,
         last_name:  LastName,
+        notes:      Option<String>,
         phone:      Phone,
     ) {
         self.email      = email;
         self.first_name = first_name;
         self.last_name  = last_name;
+        self.notes      = notes;
         self.phone      = phone;
     }
 
@@ -73,6 +79,7 @@ impl Teacher {
     pub fn first_name(&self) -> &FirstName    { &self.first_name }
     pub fn id(&self)         -> Uuid          { self.id }
     pub fn last_name(&self)  -> &LastName     { &self.last_name }
+    pub fn notes(&self)      -> Option<&str>  { self.notes.as_deref() }
     pub fn phone(&self)      -> &Phone        { &self.phone }
     pub fn updated_at(&self) -> DateTime<Utc> { self.updated_at }
 }

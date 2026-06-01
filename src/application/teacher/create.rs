@@ -17,6 +17,7 @@ pub struct TeacherCreateInput {
     pub email:      String,
     pub first_name: String,
     pub last_name:  String,
+    pub notes:      Option<String>,
     pub phone:      String,
 }
 
@@ -34,7 +35,7 @@ impl TeacherCreateUseCase {
         let first_name = FirstName::new(input.first_name)?;
         let last_name  = LastName::new(input.last_name)?;
         let phone      = Phone::new(input.phone)?;
-        let teacher    = Teacher::new(email, first_name, last_name, phone);
+        let teacher    = Teacher::new(email, first_name, last_name, input.notes, phone);
         self.teacher_repo.create(&teacher)?;
         Ok(())
     }

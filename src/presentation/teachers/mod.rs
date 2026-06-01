@@ -24,6 +24,7 @@ pub struct TeachersState {
     pub last_name:    String,
     pub email:        String,
     pub phone:        String,
+    pub notes:        String,
     pub created_at:   String,
     pub updated_at:   String,
     pub error:        Option<String>,
@@ -40,6 +41,7 @@ impl Default for TeachersState {
             last_name:    String::new(),
             email:        String::new(),
             phone:        String::new(),
+            notes:        String::new(),
             created_at:   String::new(),
             updated_at:   String::new(),
             error:        None,
@@ -57,6 +59,7 @@ pub fn clear_form(state: &mut TeachersState) {
     state.last_name  = String::new();
     state.email      = String::new();
     state.phone      = String::new();
+    state.notes      = String::new();
     state.created_at = String::new();
     state.updated_at = String::new();
     state.error      = None;

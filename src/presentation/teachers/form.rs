@@ -27,6 +27,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Teachers
         ui.label("Apellido"); ui.text_edit_singleline(&mut state.last_name);  ui.end_row();
         ui.label("Email");    ui.text_edit_singleline(&mut state.email);      ui.end_row();
         ui.label("Teléfono"); ui.text_edit_singleline(&mut state.phone);      ui.end_row();
+        ui.label("Notas");    ui.text_edit_multiline(&mut state.notes);       ui.end_row();
 
         if state.mode == Mode::Edit {
             ui.label("Creado");  ui.label(&state.created_at); ui.end_row();
@@ -39,11 +40,14 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Teachers
     }
 
     if ui.button("Guardar").clicked() {
+        let notes = if state.notes.trim().is_empty() { None } else { Some(state.notes.clone()) };
+
         let result = match state.mode {
             Mode::Create => TeacherCreateUseCase::new(make_repo(client)).execute(TeacherCreateInput {
                 email:      state.email.clone(),
                 first_name: state.first_name.clone(),
                 last_name:  state.last_name.clone(),
+                notes,
                 phone:      state.phone.clone(),
             }),
             Mode::Edit => TeacherUpdateUseCase::new(make_repo(client)).execute(TeacherUpdateInput {
@@ -51,6 +55,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Teachers
                 email:      state.email.clone(),
                 first_name: state.first_name.clone(),
                 last_name:  state.last_name.clone(),
+                notes,
                 phone:      state.phone.clone(),
             }),
             Mode::List => unreachable!(),

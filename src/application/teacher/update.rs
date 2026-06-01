@@ -20,6 +20,7 @@ pub struct TeacherUpdateInput {
     pub email:      String,
     pub first_name: String,
     pub last_name:  String,
+    pub notes:      Option<String>,
     pub phone:      String,
 }
 
@@ -38,7 +39,7 @@ impl TeacherUpdateUseCase {
         let first_name  = FirstName::new(input.first_name)?;
         let last_name   = LastName::new(input.last_name)?;
         let phone       = Phone::new(input.phone)?;
-        teacher.update(email, first_name, last_name, phone);
+        teacher.update(email, first_name, last_name, input.notes, phone);
         self.teacher_repo.update(&teacher)?;
         Ok(())
     }
