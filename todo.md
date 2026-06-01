@@ -1,1 +1,3 @@
 - [ ] use `sqlx::migrate!` on prod, add some loading ui
+- [ ] do not use UTC, use argentina timezone
+- [ ] check teachers.update_at (it was missing the trigger on sql)

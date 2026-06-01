@@ -107,7 +107,6 @@ impl Student {
         self.last_name  = last_name;
         self.notes      = notes;
         self.phone      = phone;
-        self.updated_at = Utc::now();
     }
 
     // ── Getters ──────────────────────────────────────────────────────────────

@@ -50,16 +50,14 @@ impl TeacherRepo for TeacherPgRepo {
             .lock()
             .unwrap()
             .execute(
-                "INSERT INTO teachers (id, first_name, last_name, phone, email, created_at, updated_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                "INSERT INTO teachers (id, first_name, last_name, phone, email)
+                 VALUES ($1, $2, $3, $4, $5)",
                 &[
                     &teacher.id(),
                     &teacher.first_name().value(),
                     &teacher.last_name().value(),
                     &teacher.phone().value(),
                     &teacher.email().value(),
-                    &teacher.created_at(),
-                    &teacher.updated_at(),
                 ],
             )
             .map_err(|e| TeacherRepoError::Database(e.to_string()))?;
@@ -109,14 +107,13 @@ impl TeacherRepo for TeacherPgRepo {
             .unwrap()
             .execute(
                 "UPDATE teachers
-                 SET first_name = $1, last_name = $2, phone = $3, email = $4, updated_at = $5
-                 WHERE id = $6",
+                 SET first_name = $1, last_name = $2, phone = $3, email = $4
+                 WHERE id = $5",
                 &[
                     &teacher.first_name().value(),
                     &teacher.last_name().value(),
                     &teacher.phone().value(),
                     &teacher.email().value(),
-                    &teacher.updated_at(),
                     &teacher.id(),
                 ],
             )

@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS teachers (
         CHECK (phone ~ '^\+?[0-9][0-9\s\-\(\)]{6,24}$')
 );
 
---  CREATE TRIGGER teachers_set_updated_at
-    --  BEFORE UPDATE ON teachers
-    --  FOR EACH ROW
-    --  EXECUTE FUNCTION set_updated_at();
+DROP TRIGGER IF EXISTS teachers_set_updated_at ON teachers;
+CREATE TRIGGER teachers_set_updated_at
+    BEFORE UPDATE ON teachers
+    FOR EACH ROW
+    EXECUTE FUNCTION set_updated_at();

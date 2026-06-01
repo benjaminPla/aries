@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::domain::teacher::Teacher;
@@ -8,6 +9,8 @@ pub struct TeacherDto {
     pub first_name: String,
     pub last_name:  String,
     pub phone:      String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl From<&Teacher> for TeacherDto {
@@ -18,6 +21,8 @@ impl From<&Teacher> for TeacherDto {
             first_name: t.first_name().value().to_owned(),
             last_name:  t.last_name().value().to_owned(),
             phone:      t.phone().value().to_owned(),
+            created_at: t.created_at(),
+            updated_at: t.updated_at(),
         }
     }
 }

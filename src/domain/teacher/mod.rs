@@ -64,7 +64,6 @@ impl Teacher {
         self.first_name = first_name;
         self.last_name  = last_name;
         self.phone      = phone;
-        self.updated_at = chrono::Utc::now();
     }
 
     // ── Getters ──────────────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::domain::student::{AgeGroup, Student};
@@ -10,6 +11,8 @@ pub struct StudentDto {
     pub last_name:  String,
     pub notes:      Option<String>,
     pub phone:      String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl From<&Student> for StudentDto {
@@ -22,6 +25,8 @@ impl From<&Student> for StudentDto {
             last_name:  s.last_name().value().to_owned(),
             notes:      s.notes().map(str::to_owned),
             phone:      s.phone().value().to_owned(),
+            created_at: s.created_at(),
+            updated_at: s.updated_at(),
         }
     }
 }

@@ -41,6 +41,11 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
         ui.label("Notas");
         ui.text_edit_multiline(&mut state.notes);
         ui.end_row();
+
+        if state.mode == Mode::Edit {
+            ui.label("Creado");  ui.label(&state.created_at); ui.end_row();
+            ui.label("Editado"); ui.label(&state.updated_at); ui.end_row();
+        }
     });
 
     if let Some(err) = &state.error {

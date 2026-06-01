@@ -58,8 +58,8 @@ impl StudentRepo for StudentPgRepo {
             .lock()
             .unwrap()
             .execute(
-                "INSERT INTO students (id, first_name, last_name, phone, email, notes, age_group, created_at, updated_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7::age_group, $8, $9)",
+                "INSERT INTO students (id, first_name, last_name, phone, email, notes, age_group)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7::age_group)",
                 &[
                     &student.id(),
                     &student.first_name().value(),
@@ -68,8 +68,6 @@ impl StudentRepo for StudentPgRepo {
                     &student.email().value(),
                     &student.notes(),
                     &student.age_group().as_db_str(),
-                    &student.created_at(),
-                    &student.updated_at(),
                 ],
             )
             .map_err(|e| StudentRepoError::Database(e.to_string()))?;

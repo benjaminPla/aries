@@ -27,6 +27,11 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Teachers
         ui.label("Apellido"); ui.text_edit_singleline(&mut state.last_name);  ui.end_row();
         ui.label("Email");    ui.text_edit_singleline(&mut state.email);      ui.end_row();
         ui.label("Teléfono"); ui.text_edit_singleline(&mut state.phone);      ui.end_row();
+
+        if state.mode == Mode::Edit {
+            ui.label("Creado");  ui.label(&state.created_at); ui.end_row();
+            ui.label("Editado"); ui.label(&state.updated_at); ui.end_row();
+        }
     });
 
     if let Some(err) = &state.error {
