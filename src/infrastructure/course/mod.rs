@@ -1,0 +1,113 @@
+use std::sync::{Arc, Mutex};
+
+use chrono::{DateTime, Utc};
+use postgres::{Client, Row};
+use uuid::Uuid;
+
+use crate::domain::{
+    course::{repository::{CourseRepo, CourseRepoError}, Course},
+    shared::value_objects::age_group::AgeGroup,
+};
+
+pub struct CoursePgRepo {
+    client: Arc<Mutex<Client>>,
+}
+
+impl CoursePgRepo {
+    pub fn new(client: Arc<Mutex<Client>>) -> Self { Self { client } }
+}
+
+fn row_to_course(row: &Row) -> Result<Course, CourseRepoError> {
+    let id:           Uuid           = row.get("id");
+    let teacher_id:   Uuid           = row.get("teacher_id");
+    let teacher_name: String         = row.get("teacher_name");
+    let name:         String         = row.get("name");
+    let age_group:    String         = row.get("age_group_text");
+    let capacity:     i16            = row.get("capacity");
+    let price_cents:  i32            = row.get("price_cents");
+    let enrolled:     i64            = row.get("enrolled");
+    let notes:        Option<String> = row.get("notes");
+    let created_at:   DateTime<Utc>  = row.get("created_at");
+    let updated_at:   DateTime<Utc>  = row.get("updated_at");
+
+    let age_group = AgeGroup::from_db_str(&age_group)
+        .ok_or_else(|| CourseRepoError::Database(format!("unknown age_group: {age_group}")))?;
+
+    Ok(Course::reconstitute(id, teacher_id, teacher_name, name, age_group, capacity, price_cents, enrolled, notes, created_at, updated_at))
+}
+
+const SELECT: &str = "
+    SELECT c.id, c.teacher_id,
+           t.first_name || ' ' || t.last_name AS teacher_name,
+           c.name, c.age_group::text AS age_group_text,
+           c.capacity, c.price_cents, c.notes,
+           c.created_at, c.updated_at,
+           COALESCE(ec.enrolled, 0) AS enrolled
+    FROM courses c
+    JOIN teachers t ON t.id = c.teacher_id
+    LEFT JOIN (
+        SELECT course_id, COUNT(*) AS enrolled
+        FROM enrollments
+        WHERE status = 'active'
+        GROUP BY course_id
+    ) ec ON ec.course_id = c.id";
+
+impl CourseRepo for CoursePgRepo {
+    fn create(&self, course: &Course) -> Result<(), CourseRepoError> {
+        self.client.lock().unwrap()
+            .execute(
+                "INSERT INTO courses (id, teacher_id, name, age_group, capacity, price_cents, notes)
+                 VALUES ($1, $2, $3, $4::age_group, $5, $6, $7)",
+                &[
+                    &course.id(), &course.teacher_id(), &course.name(),
+                    &course.age_group().as_db_str(), &course.capacity(),
+                    &course.price_cents(), &course.notes(),
+                ],
+            )
+            .map_err(|e| CourseRepoError::Database(e.to_string()))?;
+        Ok(())
+    }
+
+    fn delete(&self, id: Uuid) -> Result<(), CourseRepoError> {
+        let n = self.client.lock().unwrap()
+            .execute("DELETE FROM courses WHERE id = $1", &[&id])
+            .map_err(|e| CourseRepoError::Database(e.to_string()))?;
+        if n == 0 { return Err(CourseRepoError::NotFound(id)); }
+        Ok(())
+    }
+
+    fn get_all(&self) -> Result<Vec<Course>, CourseRepoError> {
+        let query = format!("{SELECT} ORDER BY c.name");
+        let rows = self.client.lock().unwrap()
+            .query(&query, &[])
+            .map_err(|e| CourseRepoError::Database(e.to_string()))?;
+        rows.iter().map(row_to_course).collect()
+    }
+
+    fn get_by_id(&self, id: Uuid) -> Result<Course, CourseRepoError> {
+        let query = format!("{SELECT} WHERE c.id = $1");
+        let row = self.client.lock().unwrap()
+            .query_opt(&query, &[&id])
+            .map_err(|e| CourseRepoError::Database(e.to_string()))?
+            .ok_or(CourseRepoError::NotFound(id))?;
+        row_to_course(&row)
+    }
+
+    fn update(&self, course: &Course) -> Result<(), CourseRepoError> {
+        let n = self.client.lock().unwrap()
+            .execute(
+                "UPDATE courses
+                 SET teacher_id = $1, name = $2, age_group = $3::age_group,
+                     capacity = $4, price_cents = $5, notes = $6
+                 WHERE id = $7",
+                &[
+                    &course.teacher_id(), &course.name(),
+                    &course.age_group().as_db_str(), &course.capacity(),
+                    &course.price_cents(), &course.notes(), &course.id(),
+                ],
+            )
+            .map_err(|e| CourseRepoError::Database(e.to_string()))?;
+        if n == 0 { return Err(CourseRepoError::NotFound(course.id())); }
+        Ok(())
+    }
+}

@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use crate::domain::teacher::Teacher;
 
+#[derive(Clone)]
 pub struct TeacherDto {
     pub id:         Uuid,
     pub email:      String,

@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use crate::domain::student::{AgeGroup, Student};
 
+#[derive(Clone)]
 pub struct StudentDto {
     pub id:         Uuid,
     pub age_group:  AgeGroup,
