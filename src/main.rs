@@ -6,7 +6,48 @@ mod presentation;
 
 use std::sync::{Arc, Mutex};
 
+use log::LevelFilter;
+use log4rs::{
+    append::rolling_file::{
+        policy::compound::{
+            roll::fixed_window::FixedWindowRoller,
+            trigger::size::SizeTrigger,
+            CompoundPolicy,
+        },
+        RollingFileAppender,
+    },
+    config::{Appender, Config, Root},
+    encode::pattern::PatternEncoder,
+};
 use postgresql_embedded::PostgreSQL;
+
+fn init_logger() {
+    let log_dir = dirs::data_local_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("aries")
+        .join("logs");
+
+    std::fs::create_dir_all(&log_dir).expect("failed to create log directory");
+
+    let log_file    = log_dir.join("aries.log");
+    let archive_pat = log_dir.join("aries.{}.log").to_string_lossy().into_owned();
+
+    let roller   = FixedWindowRoller::builder().build(&archive_pat, 5).unwrap();
+    let trigger  = SizeTrigger::new(5 * 1024 * 1024); // 5 MB
+    let policy   = CompoundPolicy::new(Box::new(trigger), Box::new(roller));
+
+    let appender = RollingFileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{d(%Y-%m-%d %H:%M:%S)} [{l}] {m}\n")))
+        .build(log_file, Box::new(policy))
+        .expect("failed to build log appender");
+
+    let config = Config::builder()
+        .appender(Appender::builder().build("file", Box::new(appender)))
+        .build(Root::builder().appender("file").build(LevelFilter::Info))
+        .expect("failed to build log config");
+
+    log4rs::init_config(config).expect("failed to init logger");
+}
 
 // NOTE: only dev; prod must use a proper migration tool
 fn run_migrations(client: &mut postgres::Client) {
@@ -29,6 +70,9 @@ fn run_migrations(client: &mut postgres::Client) {
 }
 
 fn main() {
+    init_logger();
+    log::info!("starting aries");
+
     let rt = tokio::runtime::Runtime::new().unwrap();
 
     let (pg, url) = rt.block_on(async {
@@ -57,6 +101,8 @@ fn main() {
         Box::new(move |_cc| Ok(Box::new(app::App::new(client)))),
     )
     .expect("failed to start app");
+
+    log::info!("shutting down aries");
 
     rt.block_on(async {
         pg.stop().await.expect("failed to stop postgres");
