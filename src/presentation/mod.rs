@@ -58,9 +58,14 @@ pub fn render_notifications(ui: &mut egui::Ui, notifs: &mut Notifications) {
                         ui.horizontal(|ui| {
                             ui.set_min_width(width);
                             ui.colored_label(fg, &notif.message);
-                            let gap = ui.available_width() - 24.0;
+                            let gap = ui.available_width() - 20.0;
                             if gap > 0.0 { ui.add_space(gap); }
-                            if ui.small_button("×").clicked() { remove_idx = Some(i); }
+                            let btn = egui::Button::new(
+                                egui::RichText::new("×").color(fg).size(13.0)
+                            )
+                            .fill(egui::Color32::TRANSPARENT)
+                            .stroke(egui::Stroke::NONE);
+                            if ui.add(btn).clicked() { remove_idx = Some(i); }
                         });
                     });
             }

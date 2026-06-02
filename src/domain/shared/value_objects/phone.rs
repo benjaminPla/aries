@@ -29,6 +29,6 @@ impl Phone {
 
 #[derive(Debug, thiserror::Error)]
 pub enum PhoneError {
-    #[error("Invalid phone: must be E.164 format (e.g. +33612345678), 8–15 digits after '+'")]
+    #[error("teléfono inválido: debe tener formato E.164 (ej. +5491112345678), entre 8 y 15 dígitos después del '+'")]
     Invalid,
 }

@@ -27,13 +27,13 @@ use app::{AppWrapper, InitResult, LoadingStatus};
 fn init_logger() {
     let log_dir = dirs::data_local_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join("aries")
+        .join("babushka")
         .join("logs");
 
     std::fs::create_dir_all(&log_dir).expect("failed to create log directory");
 
-    let log_file    = log_dir.join("aries.log");
-    let archive_pat = log_dir.join("aries.{}.log").to_string_lossy().into_owned();
+    let log_file    = log_dir.join("babushka.log");
+    let archive_pat = log_dir.join("babushka.{}.log").to_string_lossy().into_owned();
 
     let roller   = FixedWindowRoller::builder().build(&archive_pat, 5).unwrap();
     let trigger  = SizeTrigger::new(5 * 1024 * 1024);
@@ -72,7 +72,7 @@ fn run_migrations(client: &mut postgres::Client) -> Result<(), String> {
 
 fn main() {
     init_logger();
-    log::info!("starting aries");
+    log::info!("starting babushka");
 
     let status = Arc::new(Mutex::new(LoadingStatus {
         message:  "Initializing…".into(),
@@ -104,11 +104,11 @@ fn main() {
         if let Err(e) = rt.block_on(pg.start()) { fail(e.to_string()); return; }
 
         set("Preparing database…", 0.55);
-        if !rt.block_on(pg.database_exists("aries")).unwrap_or(false) {
-            if let Err(e) = rt.block_on(pg.create_database("aries")) { fail(e.to_string()); return; }
+        if !rt.block_on(pg.database_exists("babushka")).unwrap_or(false) {
+            if let Err(e) = rt.block_on(pg.create_database("babushka")) { fail(e.to_string()); return; }
         }
 
-        let url = pg.settings().url("aries");
+        let url = pg.settings().url("babushka");
 
         set("Connecting…", 0.7);
         let mut client = match postgres::Client::connect(&url, postgres::NoTls) {
@@ -125,7 +125,7 @@ fn main() {
     });
 
     eframe::run_native(
-        "Aries",
+        "Babushka",
         eframe::NativeOptions::default(),
         Box::new(move |cc| {
             theme::apply(&cc.egui_ctx);
@@ -134,5 +134,5 @@ fn main() {
     )
     .expect("failed to start app");
 
-    log::info!("shutting down aries");
+    log::info!("shutting down babushka");
 }

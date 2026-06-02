@@ -25,12 +25,12 @@ impl Email {
 
 #[derive(Debug, thiserror::Error)]
 pub enum EmailError {
-    #[error("email cannot be blank")]
+    #[error("el email no puede estar vacío")]
     Blank,
-    #[error("invalid email address")]
+    #[error("el email es inválido")]
     Invalid,
-    #[error("email is too long (maximum {0} characters)")]
+    #[error("el email es demasiado largo (máximo {0} caracteres)")]
     TooLong(usize),
-    #[error("email is too short (minimum {0} characters)")]
+    #[error("el email es demasiado corto (mínimo {0} caracteres)")]
     TooShort(usize),
 }

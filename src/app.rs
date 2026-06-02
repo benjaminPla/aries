@@ -74,7 +74,7 @@ impl eframe::App for AppWrapper {
                 let available_height = ui.available_height();
                 ui.add_space(available_height / 3.0);
                 ui.vertical_centered(|ui| {
-                    ui.heading("Aries");
+                    ui.heading("Babushka");
                     ui.add_space(8.0);
                     ui.label(&status.message);
                     ui.add_space(8.0);
@@ -143,7 +143,7 @@ impl App {
         egui::Panel::left("menu")
             .frame(panel_frame(colors::SIDEBAR))
             .show_inside(ui, |ui| {
-                ui.heading("Aries");
+                ui.heading("Babushka");
                 ui.add_space(2.0);
                 ui.separator();
                 ui.add_space(4.0);

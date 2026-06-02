@@ -20,11 +20,11 @@ impl FirstName {
 
 #[derive(Debug, thiserror::Error)]
 pub enum FirstNameError {
-    #[error("first_name cannot be empty")]
+    #[error("el nombre no puede estar vacío")]
     Empty,
-    #[error("first_name cannot be longer than {0} characters")]
+    #[error("el nombre no puede tener más de {0} caracteres")]
     TooLong(usize),
-    #[error("first_name cannot be shorter than {0} characters")]
+    #[error("el nombre no puede tener menos de {0} caracteres")]
     TooShort(usize),
 }
 
