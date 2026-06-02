@@ -135,30 +135,28 @@ pub fn apply(ctx: &egui::Context) {
 fn load_fonts() -> FontDefinitions {
     let mut fonts = FontDefinitions::default();
 
-    let insert = |fonts: &mut FontDefinitions, key: &str, name: &str| {
-        let bytes = crate::fonts::load(name);
-        if !bytes.is_empty() {
-            fonts.font_data.insert(key.into(), Arc::new(FontData::from_owned(bytes)));
-        }
-    };
+    fonts.font_data.insert(
+        "Nunito".into(),
+        Arc::new(FontData::from_static(include_bytes!("../assets/fonts/Nunito-Regular.ttf"))),
+    );
+    fonts.font_data.insert(
+        "Nunito-Bold".into(),
+        Arc::new(FontData::from_static(include_bytes!("../assets/fonts/Nunito-Bold.ttf"))),
+    );
+    fonts.font_data.insert(
+        "Nunito-Italic".into(),
+        Arc::new(FontData::from_static(include_bytes!("../assets/fonts/Nunito-Italic.ttf"))),
+    );
 
-    insert(&mut fonts, "Nunito",         "Nunito-Regular.ttf");
-    insert(&mut fonts, "Nunito-Bold",    "Nunito-Bold.ttf");
-    insert(&mut fonts, "Nunito-SemiBold","Nunito-SemiBold.ttf");
+    fonts.families
+        .entry(FontFamily::Proportional)
+        .or_default()
+        .insert(0, "Nunito".into());
 
-    if fonts.font_data.contains_key("Nunito") {
-        fonts.families
-            .entry(FontFamily::Proportional)
-            .or_default()
-            .insert(0, "Nunito".into());
-    }
-
-    if fonts.font_data.contains_key("Nunito-Bold") {
-        fonts.families.insert(
-            FontFamily::Name("Nunito-Bold".into()),
-            vec!["Nunito-Bold".into(), "Nunito".into()],
-        );
-    }
+    fonts.families.insert(
+        FontFamily::Name("Nunito-Bold".into()),
+        vec!["Nunito-Bold".into(), "Nunito".into()],
+    );
 
     fonts
 }
