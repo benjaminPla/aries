@@ -2,6 +2,7 @@ use eframe::egui::{
     self, Color32, CornerRadius, FontData, FontDefinitions, FontFamily, FontId,
     Margin, Stroke, TextStyle, Visuals,
 };
+use std::sync::Arc;
 
 // ── Color tokens ─────────────────────────────────────────────────────────────
 // Single source of truth. Update here → updates everywhere.
@@ -134,30 +135,30 @@ pub fn apply(ctx: &egui::Context) {
 fn load_fonts() -> FontDefinitions {
     let mut fonts = FontDefinitions::default();
 
-    fonts.font_data.insert(
-        "Nunito".into(),
-        FontData::from_static(include_bytes!("../assets/fonts/Nunito-Regular.ttf")).into(),
-    );
-    fonts.font_data.insert(
-        "Nunito-Bold".into(),
-        FontData::from_static(include_bytes!("../assets/fonts/Nunito-Bold.ttf")).into(),
-    );
-    fonts.font_data.insert(
-        "Nunito-SemiBold".into(),
-        FontData::from_static(include_bytes!("../assets/fonts/Nunito-SemiBold.ttf")).into(),
-    );
+    let insert = |fonts: &mut FontDefinitions, key: &str, name: &str| {
+        let bytes = crate::fonts::load(name);
+        if !bytes.is_empty() {
+            fonts.font_data.insert(key.into(), Arc::new(FontData::from_owned(bytes)));
+        }
+    };
 
-    // Nunito Regular as default proportional (body, labels, buttons)
-    fonts.families
-        .entry(FontFamily::Proportional)
-        .or_default()
-        .insert(0, "Nunito".into());
+    insert(&mut fonts, "Nunito",         "Nunito-Regular.ttf");
+    insert(&mut fonts, "Nunito-Bold",    "Nunito-Bold.ttf");
+    insert(&mut fonts, "Nunito-SemiBold","Nunito-SemiBold.ttf");
 
-    // Named family for headings (Bold)
-    fonts.families.insert(
-        FontFamily::Name("Nunito-Bold".into()),
-        vec!["Nunito-Bold".into(), "Nunito".into()],
-    );
+    if fonts.font_data.contains_key("Nunito") {
+        fonts.families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .insert(0, "Nunito".into());
+    }
+
+    if fonts.font_data.contains_key("Nunito-Bold") {
+        fonts.families.insert(
+            FontFamily::Name("Nunito-Bold".into()),
+            vec!["Nunito-Bold".into(), "Nunito".into()],
+        );
+    }
 
     fonts
 }

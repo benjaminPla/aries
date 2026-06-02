@@ -1,6 +1,7 @@
 mod app;
 mod application;
 mod domain;
+mod fonts;
 mod infrastructure;
 mod presentation;
 mod theme;
@@ -96,7 +97,9 @@ fn main() {
             Err(e) => { fail(e.to_string()); return; }
         };
 
-        set("Setting up database…", 0.1);
+        fonts::ensure(|msg, prog| set(msg, prog));
+
+        set("Setting up database…", 0.15);
         let mut pg = PostgreSQL::default();
         if let Err(e) = rt.block_on(pg.setup()) { fail(e.to_string()); return; }
 
