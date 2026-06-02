@@ -7,10 +7,11 @@ use crate::application::teacher::{
     create::{TeacherCreateInput, TeacherCreateUseCase},
     update::{TeacherUpdateInput, TeacherUpdateUseCase},
 };
+use crate::presentation::{push_error, push_success, Notifications};
 
 use super::{Mode, TeachersState, clear_form, make_repo};
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut TeachersState) {
+pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut TeachersState, notifs: &mut Notifications) {
     let title = if state.mode == Mode::Create { "Nuevo Profesor" } else { "Editar Profesor" };
 
     ui.horizontal(|ui| {
@@ -35,10 +36,6 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Teachers
         }
     });
 
-    if let Some(err) = &state.error {
-        ui.colored_label(egui::Color32::RED, err);
-    }
-
     if ui.button("Guardar").clicked() {
         let notes = if state.notes.trim().is_empty() { None } else { Some(state.notes.clone()) };
 
@@ -62,8 +59,13 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Teachers
         };
 
         match result {
-            Ok(_)  => { state.needs_reload = true; state.mode = Mode::List; clear_form(state); }
-            Err(e) => { state.error = Some(e.to_string()); }
+            Ok(_)  => {
+                push_success(notifs, "Profesor guardado");
+                state.needs_reload = true;
+                state.mode = Mode::List;
+                clear_form(state);
+            }
+            Err(e) => push_error(notifs, e.to_string()),
         }
     }
 }

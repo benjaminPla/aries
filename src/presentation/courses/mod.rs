@@ -22,6 +22,7 @@ use crate::{
         course::CoursePgRepo, enrollment::EnrollmentPgRepo,
         payment::PaymentPgRepo, teacher::TeacherPgRepo, student::StudentPgRepo,
     },
+    presentation::{push_error, Notifications},
 };
 
 #[derive(Default, PartialEq)]
@@ -73,7 +74,6 @@ pub struct CoursesState {
     pub created_at:             String,
     pub updated_at:             String,
 
-    pub error:                  Option<String>,
     pub confirm_delete:         Option<Uuid>,
 }
 
@@ -104,7 +104,6 @@ impl Default for CoursesState {
             payment_notes:            String::new(),
             created_at:               String::new(),
             updated_at:               String::new(),
-            error:                    None,
             confirm_delete:           None,
         }
     }
@@ -142,21 +141,20 @@ pub fn clear_course_form(state: &mut CoursesState) {
     state.course_notes = String::new();
     state.created_at   = String::new();
     state.updated_at   = String::new();
-    state.error        = None;
 }
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState) {
+pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState, notifs: &mut Notifications) {
     if state.needs_reload {
         match CourseGetAllUseCase::new(make_course_repo(client)).execute() {
             Ok(courses) => { state.courses = courses; state.needs_reload = false; }
-            Err(e)      => { state.error = Some(e.to_string()); }
+            Err(e)      => push_error(notifs, e.to_string()),
         }
     }
 
     match state.mode {
-        Mode::List                             => list::show(ui, client, state),
-        Mode::CreateCourse | Mode::EditCourse  => form::show(ui, client, state),
-        Mode::Detail | Mode::AddEnrollment     => detail::show(ui, client, state),
-        Mode::EnrollmentDetail | Mode::AddPayment => enrollment_detail::show(ui, client, state),
+        Mode::List                                => list::show(ui, client, state, notifs),
+        Mode::CreateCourse | Mode::EditCourse     => form::show(ui, client, state, notifs),
+        Mode::Detail | Mode::AddEnrollment        => detail::show(ui, client, state, notifs),
+        Mode::EnrollmentDetail | Mode::AddPayment => enrollment_detail::show(ui, client, state, notifs),
     }
 }

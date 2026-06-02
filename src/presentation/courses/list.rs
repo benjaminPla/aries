@@ -1,23 +1,21 @@
 use std::sync::{Arc, Mutex};
 
-use crate::presentation::fmt_dt;
 use eframe::egui;
 use postgres::Client;
 use uuid::Uuid;
 
 use crate::application::course::delete::CourseDeleteUseCase;
-use crate::presentation::confirm_delete_modal;
+use crate::presentation::{confirm_delete_modal, fmt_dt, push_error, push_success, Notifications};
 
 use super::{CoursesState, Mode, clear_course_form, format_price, make_course_repo};
 
 enum Action { Open, Edit, Delete }
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState) {
+pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState, notifs: &mut Notifications) {
     ui.horizontal(|ui| {
         ui.heading("Cursos");
         if ui.button("+ Nuevo").clicked() {
             clear_course_form(state);
-            // preload teachers for the form
             if let Ok(ts) = crate::application::teacher::get_all::TeacherGetAllUseCase::new(
                 super::make_teacher_repo(client)
             ).execute() {
@@ -27,11 +25,6 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
         }
     });
     ui.separator();
-
-    if let Some(err) = &state.error {
-        ui.colored_label(egui::Color32::RED, err);
-        ui.separator();
-    }
 
     let mut action: Option<(Action, Uuid)> = None;
 
@@ -68,10 +61,9 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
         match act {
             Action::Open => {
                 if let Some(c) = state.courses.iter().find(|c| c.id == id) {
-                    state.selected_course        = Some(c.clone());
+                    state.selected_course          = Some(c.clone());
                     state.needs_reload_enrollments = true;
-                    state.error                  = None;
-                    state.mode                   = Mode::Detail;
+                    state.mode                     = Mode::Detail;
                 }
             }
             Action::Edit => {
@@ -85,7 +77,6 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
                     state.course_notes = c.notes.clone().unwrap_or_default();
                     state.created_at   = fmt_dt(c.created_at);
                     state.updated_at   = fmt_dt(c.updated_at);
-                    state.error        = None;
                     if let Ok(ts) = crate::application::teacher::get_all::TeacherGetAllUseCase::new(
                         super::make_teacher_repo(client)
                     ).execute() {
@@ -100,8 +91,8 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
 
     if let Some(id) = confirm_delete_modal(ui.ctx(), &mut state.confirm_delete) {
         match CourseDeleteUseCase::new(make_course_repo(client)).execute(id) {
-            Ok(_)  => state.needs_reload = true,
-            Err(e) => state.error = Some(e.to_string()),
+            Ok(_)  => { state.needs_reload = true; push_success(notifs, "Curso eliminado"); }
+            Err(e) => push_error(notifs, e.to_string()),
         }
     }
 }

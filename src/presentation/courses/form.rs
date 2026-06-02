@@ -9,11 +9,12 @@ use crate::{
         update::{CourseUpdateInput, CourseUpdateUseCase},
     },
     domain::shared::value_objects::age_group::AgeGroup,
+    presentation::{push_error, push_success, Notifications},
 };
 
 use super::{CoursesState, Mode, clear_course_form, make_course_repo, parse_price};
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState) {
+pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState, notifs: &mut Notifications) {
     let title = if state.mode == Mode::CreateCourse { "Nuevo Curso" } else { "Editar Curso" };
 
     ui.horizontal(|ui| {
@@ -71,22 +72,18 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
         }
     });
 
-    if let Some(err) = &state.error {
-        ui.colored_label(egui::Color32::RED, err);
-    }
-
     if ui.button("Guardar").clicked() {
         let teacher_id = match state.teacher_id {
             Some(id) => id,
-            None     => { state.error = Some("seleccionar un profesor".into()); return; }
+            None     => { push_error(notifs, "Seleccionar un profesor"); return; }
         };
         let capacity = match state.capacity.trim().parse::<i16>() {
             Ok(v)  => v,
-            Err(_) => { state.error = Some("capacidad inválida".into()); return; }
+            Err(_) => { push_error(notifs, "Capacidad inválida"); return; }
         };
         let price_cents = match parse_price(&state.price) {
             Some(v) => v,
-            None    => { state.error = Some("precio inválido".into()); return; }
+            None    => { push_error(notifs, "Precio inválido"); return; }
         };
         let notes = if state.course_notes.trim().is_empty() { None } else { Some(state.course_notes.clone()) };
 
@@ -103,8 +100,13 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
         };
 
         match result {
-            Ok(_)  => { state.needs_reload = true; state.mode = Mode::List; clear_course_form(state); }
-            Err(e) => { state.error = Some(e.to_string()); }
+            Ok(_)  => {
+                push_success(notifs, "Curso guardado");
+                state.needs_reload = true;
+                state.mode = Mode::List;
+                clear_course_form(state);
+            }
+            Err(e) => push_error(notifs, e.to_string()),
         }
     }
 }

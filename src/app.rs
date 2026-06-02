@@ -6,9 +6,11 @@ use postgresql_embedded::PostgreSQL;
 use tokio::runtime::Runtime;
 
 use crate::presentation::{
+    render_notifications,
     courses::{self, CoursesState},
     students::{self, StudentsState},
     teachers::{self, TeachersState},
+    Notifications,
 };
 
 pub struct LoadingStatus {
@@ -112,6 +114,7 @@ struct App {
     courses_state:  CoursesState,
     students_state: StudentsState,
     teachers_state: TeachersState,
+    notifications:  Notifications,
 }
 
 impl App {
@@ -122,6 +125,7 @@ impl App {
             courses_state:  CoursesState::default(),
             students_state: StudentsState::default(),
             teachers_state: TeachersState::default(),
+            notifications:  Vec::new(),
         }
     }
 
@@ -134,10 +138,13 @@ impl App {
             ui.selectable_value(&mut self.current_view, View::Students, "Alumnos");
         });
 
-        egui::CentralPanel::default().show_inside(ui, |ui| match self.current_view {
-            View::Courses  => courses::show(ui, &self.client, &mut self.courses_state),
-            View::Teachers => teachers::show(ui, &self.client, &mut self.teachers_state),
-            View::Students => students::show(ui, &self.client, &mut self.students_state),
+        egui::CentralPanel::default().show_inside(ui, |ui| {
+            render_notifications(ui, &mut self.notifications);
+            match self.current_view {
+                View::Courses  => courses::show(ui, &self.client, &mut self.courses_state,  &mut self.notifications),
+                View::Teachers => teachers::show(ui, &self.client, &mut self.teachers_state, &mut self.notifications),
+                View::Students => students::show(ui, &self.client, &mut self.students_state, &mut self.notifications),
+            }
         });
     }
 }

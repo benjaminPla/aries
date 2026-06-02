@@ -15,9 +15,8 @@ use crate::{
         student::get_all::StudentGetAllUseCase,
     },
     domain::enrollment::EnrollmentStatus,
+    presentation::{confirm_delete_modal, push_error, push_success, Notifications},
 };
-
-use crate::presentation::confirm_delete_modal;
 
 use super::{
     CoursesState, Mode,
@@ -26,7 +25,7 @@ use super::{
 
 enum Action { Open, ChangeStatus(EnrollmentStatus), Delete }
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState) {
+pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState, notifs: &mut Notifications) {
     let course = match &state.selected_course {
         Some(c) => c.clone(),
         None    => { state.mode = Mode::List; return; }
@@ -35,16 +34,15 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
     if state.needs_reload_enrollments {
         match EnrollmentGetByCourseUseCase::new(make_enrollment_repo(client)).execute(course.id) {
             Ok(enrollments) => { state.enrollments = enrollments; state.needs_reload_enrollments = false; }
-            Err(e)          => { state.error = Some(e.to_string()); }
+            Err(e)          => push_error(notifs, e.to_string()),
         }
     }
 
     ui.horizontal(|ui| {
         if ui.button("← Cursos").clicked() {
-            state.mode             = Mode::List;
-            state.selected_course  = None;
-            state.enrollments      = Vec::new();
-            state.error            = None;
+            state.mode            = Mode::List;
+            state.selected_course = None;
+            state.enrollments     = Vec::new();
         }
         ui.heading(format!("{} — {}", course.name, course.age_group.label()));
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -53,11 +51,6 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
     });
     ui.label(format!("Profesor: {}", course.teacher_name));
     ui.separator();
-
-    if let Some(err) = &state.error {
-        ui.colored_label(egui::Color32::RED, err);
-        ui.separator();
-    }
 
     // Add enrollment section
     if state.mode == Mode::AddEnrollment {
@@ -90,26 +83,24 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
 
                         match result {
                             Ok(_) => {
+                                push_success(notifs, "Alumno inscrito");
                                 state.needs_reload             = true;
                                 state.needs_reload_enrollments = true;
                                 state.selected_student_id      = None;
                                 state.mode                     = Mode::Detail;
-                                state.error                    = None;
                             }
-                            Err(e) => state.error = Some(e.to_string()),
+                            Err(e) => push_error(notifs, e.to_string()),
                         }
                     }
                 }
                 if ui.button("Cancelar").clicked() {
                     state.mode                = Mode::Detail;
                     state.selected_student_id = None;
-                    state.error               = None;
                 }
             });
         }
         ui.separator();
     } else if ui.button("+ Inscribir alumno").clicked() {
-        // load available students (matching age_group, not yet enrolled)
         let enrolled_ids: std::collections::HashSet<Uuid> =
             state.enrollments.iter().map(|e| e.student_id).collect();
         if let Ok(all_students) = StudentGetAllUseCase::new(make_student_repo(client)).execute() {
@@ -119,7 +110,6 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
                 .collect();
         }
         state.selected_student_id = None;
-        state.error               = None;
         state.mode                = Mode::AddEnrollment;
     }
 
@@ -159,11 +149,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
                     egui::ComboBox::from_id_salt(format!("status_{}", e.id))
                         .selected_text(e.status.label())
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut (),
-                                (),
-                                EnrollmentStatus::Active.label(),
-                            );
+                            ui.selectable_value(&mut (), (), EnrollmentStatus::Active.label());
                             if ui.selectable_label(false, EnrollmentStatus::Active.label()).clicked() {
                                 action = Some((Action::ChangeStatus(EnrollmentStatus::Active), e.id));
                             }
@@ -186,20 +172,19 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
         match act {
             Action::Open => {
                 if let Some(e) = state.enrollments.iter().find(|e| e.id == id) {
-                    state.selected_enrollment  = Some(e.clone());
+                    state.selected_enrollment   = Some(e.clone());
                     state.needs_reload_payments = true;
-                    state.payment_amount       = super::format_price(course.price_cents);
-                    state.payment_due_date     = String::new();
-                    state.payment_notes        = String::new();
-                    state.error                = None;
-                    state.mode                 = Mode::EnrollmentDetail;
+                    state.payment_amount        = super::format_price(course.price_cents);
+                    state.payment_due_date      = String::new();
+                    state.payment_notes         = String::new();
+                    state.mode                  = Mode::EnrollmentDetail;
                 }
             }
             Action::ChangeStatus(new_status) => {
                 match EnrollmentUpdateStatusUseCase::new(make_enrollment_repo(client))
                     .execute(EnrollmentUpdateStatusInput { id, status: new_status }) {
                     Ok(_)  => { state.needs_reload_enrollments = true; state.needs_reload = true; }
-                    Err(e) => state.error = Some(e.to_string()),
+                    Err(e) => push_error(notifs, e.to_string()),
                 }
             }
             Action::Delete => { state.confirm_delete = Some(id); }
@@ -208,8 +193,12 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
 
     if let Some(id) = confirm_delete_modal(ui.ctx(), &mut state.confirm_delete) {
         match EnrollmentDeleteUseCase::new(make_enrollment_repo(client)).execute(id) {
-            Ok(_)  => { state.needs_reload_enrollments = true; state.needs_reload = true; }
-            Err(e) => state.error = Some(e.to_string()),
+            Ok(_)  => {
+                push_success(notifs, "Inscripción eliminada");
+                state.needs_reload_enrollments = true;
+                state.needs_reload = true;
+            }
+            Err(e) => push_error(notifs, e.to_string()),
         }
     }
 }

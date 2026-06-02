@@ -1,18 +1,17 @@
 use std::sync::{Arc, Mutex};
 
-use crate::presentation::fmt_dt;
 use eframe::egui;
 use postgres::Client;
 use uuid::Uuid;
 
 use crate::application::student::delete::StudentDeleteUseCase;
-use crate::presentation::confirm_delete_modal;
+use crate::presentation::{confirm_delete_modal, push_error, push_success, Notifications};
 
 use super::{Mode, StudentsState, clear_form, make_repo};
 
 enum Action { Edit, Delete }
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut StudentsState) {
+pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut StudentsState, notifs: &mut Notifications) {
     ui.horizontal(|ui| {
         ui.heading("Alumnos");
         if ui.button("+ Nuevo").clicked() {
@@ -21,11 +20,6 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
         }
     });
     ui.separator();
-
-    if let Some(err) = &state.error {
-        ui.colored_label(egui::Color32::RED, err);
-        ui.separator();
-    }
 
     let mut action: Option<(Action, Uuid)> = None;
 
@@ -65,10 +59,9 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                     state.email      = s.email.clone();
                     state.phone      = s.phone.clone();
                     state.notes      = s.notes.clone().unwrap_or_default();
-                    state.created_at = fmt_dt(s.created_at);
-                    state.updated_at = fmt_dt(s.updated_at);
+                    state.created_at = crate::presentation::fmt_dt(s.created_at);
+                    state.updated_at = crate::presentation::fmt_dt(s.updated_at);
                     state.editing_id = Some(id);
-                    state.error      = None;
                     state.mode       = Mode::Edit;
                 }
             }
@@ -78,8 +71,8 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
 
     if let Some(id) = confirm_delete_modal(ui.ctx(), &mut state.confirm_delete) {
         match StudentDeleteUseCase::new(make_repo(client)).execute(id) {
-            Ok(_)  => state.needs_reload = true,
-            Err(e) => state.error = Some(e.to_string()),
+            Ok(_)  => { state.needs_reload = true; push_success(notifs, "Alumno eliminado"); }
+            Err(e) => push_error(notifs, e.to_string()),
         }
     }
 }

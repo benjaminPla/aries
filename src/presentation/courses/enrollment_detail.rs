@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use chrono::NaiveDate;
 
-use crate::presentation::fmt_dt;
+use crate::presentation::{fmt_dt, push_error, push_success, Notifications};
 use eframe::egui;
 use postgres::Client;
 use uuid::Uuid;
@@ -18,7 +18,7 @@ use crate::{
 
 use super::{CoursesState, Mode, make_payment_repo, parse_price};
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState) {
+pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState, notifs: &mut Notifications) {
     let enrollment = match &state.selected_enrollment {
         Some(e) => e.clone(),
         None    => { state.mode = Mode::Detail; return; }
@@ -28,7 +28,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
     if state.needs_reload_payments {
         match PaymentGetByEnrollmentUseCase::new(make_payment_repo(client)).execute(enrollment.id) {
             Ok(payments) => { state.payments = payments; state.needs_reload_payments = false; }
-            Err(e)       => { state.error = Some(e.to_string()); }
+            Err(e)       => push_error(notifs, e.to_string()),
         }
     }
 
@@ -37,17 +37,11 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
             state.mode                = Mode::Detail;
             state.selected_enrollment = None;
             state.payments            = Vec::new();
-            state.error               = None;
         }
         ui.heading(format!("{} — {}", enrollment.student_name, course_name));
         ui.label(format!("Estado: {}", enrollment.status.label()));
     });
     ui.separator();
-
-    if let Some(err) = &state.error {
-        ui.colored_label(egui::Color32::RED, err);
-        ui.separator();
-    }
 
     // Add payment form
     if state.mode == Mode::AddPayment {
@@ -71,27 +65,25 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
                             enrollment_id: enrollment.id, amount_cents, due_date, notes,
                         }) {
                             Ok(_) => {
+                                push_success(notifs, "Pago registrado");
                                 state.needs_reload_payments = true;
-                                state.mode                 = Mode::EnrollmentDetail;
-                                state.payment_due_date     = String::new();
-                                state.payment_notes        = String::new();
-                                state.error                = None;
+                                state.mode                  = Mode::EnrollmentDetail;
+                                state.payment_due_date      = String::new();
+                                state.payment_notes         = String::new();
                             }
-                            Err(e) => state.error = Some(e.to_string()),
+                            Err(e) => push_error(notifs, e.to_string()),
                         }
                     }
-                    _ => state.error = Some("período o monto inválido (formato: YYYY-MM)".into()),
+                    _ => push_error(notifs, "Período o monto inválido (formato: YYYY-MM)"),
                 }
             }
             if ui.button("Cancelar").clicked() {
                 state.mode = Mode::EnrollmentDetail;
-                state.error = None;
             }
         });
         ui.separator();
     } else if ui.button("+ Registrar pago").clicked() {
         state.mode = Mode::AddPayment;
-        state.error = None;
     }
 
     // Payment history
@@ -137,8 +129,11 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
 
     if let Some(id) = mark_id {
         match PaymentMarkPaidUseCase::new(make_payment_repo(client)).execute(id) {
-            Ok(_)  => state.needs_reload_payments = true,
-            Err(e) => state.error = Some(e.to_string()),
+            Ok(_)  => {
+                push_success(notifs, "Pago marcado como pagado");
+                state.needs_reload_payments = true;
+            }
+            Err(e) => push_error(notifs, e.to_string()),
         }
     }
 }

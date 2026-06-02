@@ -10,24 +10,24 @@ use uuid::Uuid;
 use crate::{
     application::teacher::{dto::TeacherDto, get_all::TeacherGetAllUseCase},
     infrastructure::teacher::TeacherPgRepo,
+    presentation::{push_error, Notifications},
 };
 
 #[derive(Default, PartialEq)]
 pub enum Mode { #[default] List, Create, Edit }
 
 pub struct TeachersState {
-    pub mode:         Mode,
-    pub teachers:     Vec<TeacherDto>,
-    pub needs_reload: bool,
-    pub editing_id:   Option<Uuid>,
-    pub first_name:   String,
-    pub last_name:    String,
-    pub email:        String,
-    pub phone:        String,
-    pub notes:        String,
-    pub created_at:   String,
-    pub updated_at:   String,
-    pub error:          Option<String>,
+    pub mode:           Mode,
+    pub teachers:       Vec<TeacherDto>,
+    pub needs_reload:   bool,
+    pub editing_id:     Option<Uuid>,
+    pub first_name:     String,
+    pub last_name:      String,
+    pub email:          String,
+    pub phone:          String,
+    pub notes:          String,
+    pub created_at:     String,
+    pub updated_at:     String,
     pub confirm_delete: Option<Uuid>,
 }
 
@@ -45,7 +45,6 @@ impl Default for TeachersState {
             notes:          String::new(),
             created_at:     String::new(),
             updated_at:     String::new(),
-            error:          None,
             confirm_delete: None,
         }
     }
@@ -64,19 +63,18 @@ pub fn clear_form(state: &mut TeachersState) {
     state.notes      = String::new();
     state.created_at = String::new();
     state.updated_at = String::new();
-    state.error      = None;
 }
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut TeachersState) {
+pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut TeachersState, notifs: &mut Notifications) {
     if state.needs_reload {
         match TeacherGetAllUseCase::new(make_repo(client)).execute() {
             Ok(teachers) => { state.teachers = teachers; state.needs_reload = false; }
-            Err(e)       => { state.error = Some(e.to_string()); }
+            Err(e)       => push_error(notifs, e.to_string()),
         }
     }
 
     match state.mode {
-        Mode::List              => list::show(ui, client, state),
-        Mode::Create | Mode::Edit => form::show(ui, client, state),
+        Mode::List              => list::show(ui, client, state, notifs),
+        Mode::Create | Mode::Edit => form::show(ui, client, state, notifs),
     }
 }
