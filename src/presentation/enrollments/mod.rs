@@ -72,8 +72,8 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Enrollme
 
 pub fn status_label_color(s: &EnrollmentStatus) -> egui::Color32 {
     match s {
-        EnrollmentStatus::Active    => egui::Color32::GREEN,
-        EnrollmentStatus::Dropped   => egui::Color32::RED,
-        EnrollmentStatus::Completed => egui::Color32::GRAY,
+        EnrollmentStatus::Active    => crate::theme::colors::SUCCESS,
+        EnrollmentStatus::Dropped   => crate::theme::colors::ERROR,
+        EnrollmentStatus::Completed => crate::theme::colors::TEXT_MUTED,
     }
 }

@@ -138,25 +138,33 @@ impl App {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        egui::Panel::left("menu").show_inside(ui, |ui| {
-            ui.heading("Aries");
-            ui.separator();
-            ui.selectable_value(&mut self.current_view, View::Courses,     "Cursos");
-            ui.selectable_value(&mut self.current_view, View::Enrollments, "Inscripciones");
-            ui.selectable_value(&mut self.current_view, View::Payments,    "Pagos");
-            ui.selectable_value(&mut self.current_view, View::Teachers,    "Profesores");
-            ui.selectable_value(&mut self.current_view, View::Students,    "Alumnos");
-        });
+        use crate::theme::{colors, panel_frame};
 
-        egui::CentralPanel::default().show_inside(ui, |ui| {
-            render_notifications(ui, &mut self.notifications);
-            match self.current_view {
-                View::Courses     => courses::show(ui, &self.client, &mut self.courses_state,     &mut self.notifications),
-                View::Enrollments => enrollments::show(ui, &self.client, &mut self.enrollments_state, &mut self.notifications),
-                View::Payments    => payments::show(ui, &self.client, &mut self.payments_state,   &mut self.notifications),
-                View::Teachers    => teachers::show(ui, &self.client, &mut self.teachers_state,   &mut self.notifications),
-                View::Students    => students::show(ui, &self.client, &mut self.students_state,   &mut self.notifications),
-            }
-        });
+        egui::Panel::left("menu")
+            .frame(panel_frame(colors::SIDEBAR))
+            .show_inside(ui, |ui| {
+                ui.heading("Aries");
+                ui.add_space(2.0);
+                ui.separator();
+                ui.add_space(4.0);
+                ui.selectable_value(&mut self.current_view, View::Courses,     "Cursos");
+                ui.selectable_value(&mut self.current_view, View::Enrollments, "Inscripciones");
+                ui.selectable_value(&mut self.current_view, View::Payments,    "Pagos");
+                ui.selectable_value(&mut self.current_view, View::Teachers,    "Profesores");
+                ui.selectable_value(&mut self.current_view, View::Students,    "Alumnos");
+            });
+
+        egui::CentralPanel::default()
+            .frame(panel_frame(colors::BACKGROUND))
+            .show_inside(ui, |ui| {
+                render_notifications(ui, &mut self.notifications);
+                match self.current_view {
+                    View::Courses     => courses::show(ui, &self.client, &mut self.courses_state,         &mut self.notifications),
+                    View::Enrollments => enrollments::show(ui, &self.client, &mut self.enrollments_state, &mut self.notifications),
+                    View::Payments    => payments::show(ui, &self.client, &mut self.payments_state,       &mut self.notifications),
+                    View::Teachers    => teachers::show(ui, &self.client, &mut self.teachers_state,       &mut self.notifications),
+                    View::Students    => students::show(ui, &self.client, &mut self.students_state,       &mut self.notifications),
+                }
+            });
     }
 }

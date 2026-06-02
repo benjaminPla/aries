@@ -134,9 +134,9 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
                     None => { ui.label("—"); }
                     Some(s) => {
                         let (text, color) = match s.as_str() {
-                            "paid"    => ("✓ Pagado",    egui::Color32::GREEN),
-                            "overdue" => ("✗ Vencido",   egui::Color32::RED),
-                            _         => ("⚠ Pendiente", egui::Color32::YELLOW),
+                            "paid"    => ("✓ Pagado",    crate::theme::colors::SUCCESS),
+                            "overdue" => ("✗ Vencido",   crate::theme::colors::ERROR),
+                            _         => ("⚠ Pendiente", crate::theme::colors::WARNING),
                         };
                         ui.colored_label(color, text);
                     }

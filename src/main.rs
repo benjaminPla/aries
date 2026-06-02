@@ -3,6 +3,7 @@ mod application;
 mod domain;
 mod infrastructure;
 mod presentation;
+mod theme;
 
 use std::sync::{Arc, Mutex};
 
@@ -126,7 +127,10 @@ fn main() {
     eframe::run_native(
         "Aries",
         eframe::NativeOptions::default(),
-        Box::new(move |_cc| Ok(Box::new(AppWrapper::new(status)))),
+        Box::new(move |cc| {
+            theme::apply(&cc.egui_ctx);
+            Ok(Box::new(AppWrapper::new(status)))
+        }),
     )
     .expect("failed to start app");
 

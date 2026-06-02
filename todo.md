@@ -1,4 +1,3 @@
-- [ ] use `sqlx::migrate!` on prod
 - [x] check delete cascade and delete confirmation
 - [x] do not use UTC, use argentina timezone
 - [x] check teachers.update_at (it was missing the trigger on sql)

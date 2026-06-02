@@ -35,22 +35,26 @@ pub fn render_notifications(ui: &mut egui::Ui, notifs: &mut Notifications) {
     notifs.retain(|n| n.born.elapsed() < TIMEOUT);
     if notifs.is_empty() { return; }
     ui.ctx().request_repaint_after(Duration::from_millis(250));
+    let panel_rect = ui.max_rect();
+    let width      = panel_rect.width();
     let mut remove_idx = None;
-    egui::Panel::bottom("notifications_bar")
-        .frame(egui::Frame::NONE)
-        .show_separator_line(false)
-        .show_inside(ui, |ui| {
+
+    egui::Area::new(egui::Id::new("notifications"))
+        .anchor(egui::Align2::LEFT_BOTTOM, [panel_rect.min.x, 0.0])
+        .order(egui::Order::Foreground)
+        .interactable(true)
+        .show(ui.ctx(), |ui| {
             for (i, notif) in notifs.iter().enumerate() {
                 let (bg, fg) = match notif.kind {
-                    NotificationKind::Error   => (egui::Color32::from_rgb(180, 50,  50), egui::Color32::WHITE),
-                    NotificationKind::Success => (egui::Color32::from_rgb(34,  139, 70), egui::Color32::WHITE),
-                    NotificationKind::Warning => (egui::Color32::from_rgb(200, 140, 20), egui::Color32::WHITE),
+                    NotificationKind::Error   => (crate::theme::colors::NOTIF_ERROR,   crate::theme::colors::WHITE),
+                    NotificationKind::Success => (crate::theme::colors::NOTIF_SUCCESS, crate::theme::colors::WHITE),
+                    NotificationKind::Warning => (crate::theme::colors::NOTIF_WARNING, crate::theme::colors::WHITE),
                 };
                 egui::Frame::new()
                     .fill(bg)
                     .inner_margin(egui::Margin::same(6))
                     .show(ui, |ui| {
-                        ui.set_min_width(ui.available_width());
+                        ui.set_min_width(width);
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if ui.small_button("×").clicked() { remove_idx = Some(i); }
                             ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
@@ -60,6 +64,7 @@ pub fn render_notifications(ui: &mut egui::Ui, notifs: &mut Notifications) {
                     });
             }
         });
+
     if let Some(i) = remove_idx { notifs.remove(i); }
 }
 

@@ -124,9 +124,9 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Enrollme
 
                 match e.latest_payment.as_deref() {
                     None          => { ui.label("—"); }
-                    Some("paid")    => { ui.colored_label(egui::Color32::GREEN,  "✓ Pagado"); }
-                    Some("overdue") => { ui.colored_label(egui::Color32::RED,    "✗ Vencido"); }
-                    _               => { ui.colored_label(egui::Color32::YELLOW, "⚠ Pendiente"); }
+                    Some("paid")    => { ui.colored_label(crate::theme::colors::SUCCESS,  "✓ Pagado"); }
+                    Some("overdue") => { ui.colored_label(crate::theme::colors::ERROR,    "✗ Vencido"); }
+                    _               => { ui.colored_label(crate::theme::colors::WARNING, "⚠ Pendiente"); }
                 }
 
                 ui.label(fmt_dt(e.enrolled_at));

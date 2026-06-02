@@ -127,9 +127,9 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Payments
                 ui.label(format!("${:.2}", p.amount_cents as f64 / 100.0));
 
                 let (text, color) = match p.status {
-                    PaymentStatus::Paid    => ("✓ Pagado",    egui::Color32::GREEN),
-                    PaymentStatus::Overdue => ("✗ Vencido",   egui::Color32::RED),
-                    PaymentStatus::Pending => ("⚠ Pendiente", egui::Color32::YELLOW),
+                    PaymentStatus::Paid    => ("✓ Pagado",    crate::theme::colors::SUCCESS),
+                    PaymentStatus::Overdue => ("✗ Vencido",   crate::theme::colors::ERROR),
+                    PaymentStatus::Pending => ("⚠ Pendiente", crate::theme::colors::WARNING),
                 };
                 ui.colored_label(color, text);
 
