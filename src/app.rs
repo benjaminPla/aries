@@ -133,6 +133,7 @@ impl App {
         use crate::theme::{colors, panel_frame};
 
         egui::Panel::left("menu")
+            .exact_width(crate::theme::sizes::SIDEBAR_WIDTH)
             .frame(panel_frame(colors::SIDEBAR))
             .show_inside(ui, |ui| {
                 ui.heading("Babushka");
