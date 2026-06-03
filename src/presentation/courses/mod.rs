@@ -4,6 +4,7 @@ mod list;
 
 use std::sync::{Arc, Mutex};
 
+use chrono::NaiveDate;
 use eframe::egui;
 use postgres::Client;
 use uuid::Uuid;
@@ -11,10 +12,11 @@ use uuid::Uuid;
 use crate::{
     application::{
         course::{dto::CourseDto, get_all::CourseGetAllUseCase},
+        course_period::dto::CoursePeriodDto,
         teacher::dto::TeacherDto,
     },
     domain::shared::value_objects::age_group::AgeGroup,
-    infrastructure::{course::CoursePgRepo, teacher::TeacherPgRepo},
+    infrastructure::{course::CoursePgRepo, course_period::CoursePeriodPgRepo, teacher::TeacherPgRepo},
     presentation::{push_error, Notifications},
 };
 
@@ -45,40 +47,59 @@ pub struct CoursesState {
     pub course_notes: String,
 
     // course detail
-    pub selected_course: Option<CourseDto>,
+    pub selected_course:    Option<CourseDto>,
+    pub periods:            Vec<CoursePeriodDto>,
+    pub needs_reload_periods: bool,
+
+    // period form
+    pub period_label:      String,
+    pub period_start_date: Option<NaiveDate>,
+    pub period_end_date:   Option<NaiveDate>,
+    pub show_period_form:  bool,
 
     // read-only timestamps
     pub created_at:   String,
     pub updated_at:   String,
 
-    pub confirm_delete: Option<Uuid>,
+    pub confirm_delete:        Option<Uuid>,
+    pub confirm_delete_period: Option<Uuid>,
 }
 
 impl Default for CoursesState {
     fn default() -> Self {
         Self {
-            mode:            Mode::List,
-            courses:         Vec::new(),
-            needs_reload:    true,
-            editing_id:      None,
-            name:            String::new(),
-            teacher_id:      None,
-            teachers:        Vec::new(),
-            age_group:       AgeGroup::default(),
-            capacity:        String::new(),
-            price:           String::new(),
-            class_price:     String::new(),
-            course_notes:    String::new(),
-            selected_course: None,
-            created_at:      String::new(),
-            updated_at:      String::new(),
-            confirm_delete:  None,
+            mode:                    Mode::List,
+            courses:                 Vec::new(),
+            needs_reload:            true,
+            editing_id:              None,
+            name:                    String::new(),
+            teacher_id:              None,
+            teachers:                Vec::new(),
+            age_group:               AgeGroup::default(),
+            capacity:                String::new(),
+            price:                   String::new(),
+            class_price:             String::new(),
+            course_notes:            String::new(),
+            selected_course:         None,
+            periods:                 Vec::new(),
+            needs_reload_periods:    false,
+            period_label:            String::new(),
+            period_start_date:       None,
+            period_end_date:         None,
+            show_period_form:        false,
+            created_at:              String::new(),
+            updated_at:              String::new(),
+            confirm_delete:          None,
+            confirm_delete_period:   None,
         }
     }
 }
 
 pub fn make_course_repo(client: &Arc<Mutex<Client>>) -> Arc<CoursePgRepo> {
     Arc::new(CoursePgRepo::new(Arc::clone(client)))
+}
+pub fn make_course_period_repo(client: &Arc<Mutex<Client>>) -> Arc<CoursePeriodPgRepo> {
+    Arc::new(CoursePeriodPgRepo::new(Arc::clone(client)))
 }
 pub fn make_teacher_repo(client: &Arc<Mutex<Client>>) -> Arc<TeacherPgRepo> {
     Arc::new(TeacherPgRepo::new(Arc::clone(client)))

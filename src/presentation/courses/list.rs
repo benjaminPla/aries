@@ -68,8 +68,9 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
         match act {
             Action::Open => {
                 if let Some(c) = state.courses.iter().find(|c| c.id == id) {
-                    state.selected_course = Some(c.clone());
-                    state.mode            = Mode::Detail;
+                    state.selected_course      = Some(c.clone());
+                    state.needs_reload_periods = true;
+                    state.mode                 = Mode::Detail;
                 }
             }
             Action::Edit => {
