@@ -109,6 +109,7 @@ fn main() {
         }
 
         let url = pg.settings().url("babushka");
+        log::info!("psql \"{url}\"");
 
         set("Conectando…", 0.7);
         let mut client = match postgres::Client::connect(&url, postgres::NoTls) {
