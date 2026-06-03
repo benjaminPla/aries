@@ -1,3 +1,4 @@
+- [ ] ux -> registry payment bad date format, default to now()
 - [ ] fix notifications ui
 - [ ] add filters instead of selectors (ei: enrollements view students and courses)
 - [x] add Cargo.toml version, if possible, to 1.0
