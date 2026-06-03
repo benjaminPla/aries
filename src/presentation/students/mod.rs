@@ -130,6 +130,27 @@ pub fn make_course_period_repo(client: &Arc<Mutex<Client>>) -> Arc<CoursePeriodP
     Arc::new(CoursePeriodPgRepo::new(Arc::clone(client)))
 }
 
+pub fn clear_detail_state(state: &mut StudentsState) {
+    state.selected_student          = None;
+    state.detail_tab                = DetailTab::Inscripciones;
+    state.student_enrollments       = Vec::new();
+    state.needs_reload_enrollments  = false;
+    state.show_enroll_form          = false;
+    state.enroll_courses            = Vec::new();
+    state.enroll_sel_course         = None;
+    state.enroll_periods            = Vec::new();
+    state.enroll_sel_period         = None;
+    state.student_payments          = Vec::new();
+    state.needs_reload_payments     = false;
+    state.show_payment_form         = false;
+    state.payment_enrollments       = Vec::new();
+    state.payment_sel_enrollment    = None;
+    state.payment_amount            = String::new();
+    state.payment_due_date          = String::new();
+    state.confirm_delete_enrollment = None;
+    state.confirm_delete_payment    = None;
+}
+
 pub fn clear_form(state: &mut StudentsState) {
     state.editing_id = None;
     state.age_group  = AgeGroup::default();

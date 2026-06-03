@@ -59,12 +59,12 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
     if let Some((act, id)) = action {
         match act {
             Action::Open => {
-                if let Some(s) = state.students.iter().find(|s| s.id == id) {
-                    state.selected_student          = Some(s.clone());
-                    state.detail_tab                = super::DetailTab::Inscripciones;
-                    state.needs_reload_enrollments  = true;
-                    state.needs_reload_payments     = true;
-                    state.mode                      = super::Mode::Detail;
+                if let Some(s) = state.students.iter().find(|s| s.id == id).cloned() {
+                    super::clear_detail_state(state);
+                    state.selected_student         = Some(s);
+                    state.needs_reload_enrollments = true;
+                    state.needs_reload_payments    = true;
+                    state.mode                     = super::Mode::Detail;
                 }
             }
             Action::Edit => {

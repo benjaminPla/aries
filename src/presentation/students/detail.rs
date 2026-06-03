@@ -41,10 +41,8 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
     // ── Header ───────────────────────────────────────────────────────────────
     ui.horizontal(|ui| {
         if ui.button("← Alumnos").clicked() {
-            state.mode             = Mode::List;
-            state.selected_student = None;
-            state.student_enrollments = Vec::new();
-            state.student_payments    = Vec::new();
+            super::clear_detail_state(state);
+            state.mode = Mode::List;
             return;
         }
         ui.heading(format!("{} {}", student.first_name, student.last_name));
