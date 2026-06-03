@@ -1,3 +1,9 @@
+- [ ] fix notifications ui
+- [ ] add filters instead of selectors (ei: enrollements view students and courses)
+- [x] check discounts and partial payments strategy, idea: add payment + a discount row
+- [ ] enrollements status need to be automatically completed on course now >= endtime
+- [x] enrollements must add individual classes andnot full courses
+- [ ] payments -> add payment method -> cash, transfer, card
 - [x] check delete cascade and delete confirmation
 - [x] do not use UTC, use argentina timezone
 - [x] check teachers.update_at (it was missing the trigger on sql)
