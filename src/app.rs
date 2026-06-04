@@ -6,8 +6,16 @@ use postgresql_embedded::PostgreSQL;
 use tokio::runtime::Runtime;
 
 use crate::{
-    domain::teacher::repository::TeacherRepo,
-    infrastructure::teacher::TeacherPgRepo,
+    domain::{
+        course::repository::CourseRepo,
+        student::repository::StudentRepo,
+        teacher::repository::TeacherRepo,
+    },
+    infrastructure::{
+        course::CoursePgRepo,
+        student::StudentPgRepo,
+        teacher::TeacherPgRepo,
+    },
     presentation::{
         render_notifications,
         courses::{self, CoursesState},
@@ -114,6 +122,8 @@ enum View {
 
 struct App {
     client:         Arc<Mutex<Client>>,
+    course_repo:    Arc<dyn CourseRepo>,
+    student_repo:   Arc<dyn StudentRepo>,
     teacher_repo:   Arc<dyn TeacherRepo>,
     current_view:   View,
     courses_state:  CoursesState,
@@ -125,6 +135,8 @@ struct App {
 impl App {
     fn new(client: Arc<Mutex<Client>>) -> Self {
         Self {
+            course_repo:    Arc::new(CoursePgRepo::new(Arc::clone(&client))),
+            student_repo:   Arc::new(StudentPgRepo::new(Arc::clone(&client))),
             teacher_repo:   Arc::new(TeacherPgRepo::new(Arc::clone(&client))),
             client,
             current_view:   View::Students,
@@ -156,8 +168,8 @@ impl App {
             .show_inside(ui, |ui| {
                 render_notifications(ui, &mut self.notifications);
                 match self.current_view {
-                    View::Students => students::show(ui, &self.client, &mut self.students_state, &mut self.notifications),
-                    View::Courses  => courses::show(ui, &self.client, &mut self.courses_state,   &mut self.notifications),
+                    View::Students => students::show(ui, &self.student_repo, &self.client, &mut self.students_state, &mut self.notifications),
+                    View::Courses  => courses::show(ui, &self.course_repo,  &self.client, &mut self.courses_state,   &mut self.notifications),
                     View::Teachers => teachers::show(ui, &self.teacher_repo, &mut self.teachers_state, &mut self.notifications),
                 }
             });

@@ -1,20 +1,19 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use eframe::egui;
-use postgres::Client;
 
 use crate::{
     application::student::{
         create::{StudentCreateInput, StudentCreateUseCase},
         update::{StudentUpdateInput, StudentUpdateUseCase},
     },
-    domain::student::AgeGroup,
+    domain::{student::{repository::StudentRepo, AgeGroup}},
     presentation::{push_error, push_success, Notifications},
 };
 
-use super::{Mode, StudentsState, clear_form, make_repo};
+use super::{Mode, StudentsState, clear_form};
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut StudentsState, notifs: &mut Notifications) {
+pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn StudentRepo>, state: &mut StudentsState, notifs: &mut Notifications) {
     let title = if state.mode == Mode::Create { "Nuevo Alumno" } else { "Editar Alumno" };
 
     ui.horizontal(|ui| {
@@ -53,17 +52,17 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
         let notes = if state.notes.trim().is_empty() { None } else { Some(state.notes.clone()) };
 
         let result = match state.mode {
-            Mode::Create => StudentCreateUseCase::new(make_repo(client)).execute(StudentCreateInput {
-                age_group:  state.age_group.clone(),
+            Mode::Create => StudentCreateUseCase::new(Arc::clone(repo)).execute(StudentCreateInput {
+                age_group:  state.age_group,
                 email:      state.email.clone(),
                 first_name: state.first_name.clone(),
                 last_name:  state.last_name.clone(),
                 notes,
                 phone:      state.phone.clone(),
             }),
-            Mode::Edit => StudentUpdateUseCase::new(make_repo(client)).execute(StudentUpdateInput {
+            Mode::Edit => StudentUpdateUseCase::new(Arc::clone(repo)).execute(StudentUpdateInput {
                 id:         state.editing_id.unwrap(),
-                age_group:  state.age_group.clone(),
+                age_group:  state.age_group,
                 email:      state.email.clone(),
                 first_name: state.first_name.clone(),
                 last_name:  state.last_name.clone(),

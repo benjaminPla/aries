@@ -8,11 +8,13 @@ use crate::application::course::delete::CourseDeleteUseCase;
 use crate::presentation::{confirm_delete_modal, fmt_dt, push_error, push_success, Notifications};
 use crate::presentation::table::{self, Column};
 
-use super::{CoursesState, Mode, clear_course_form, format_price, make_course_repo};
+use crate::domain::course::repository::CourseRepo;
+
+use super::{CoursesState, Mode, clear_course_form, format_price};
 
 enum Action { Open, Edit, Delete }
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState, notifs: &mut Notifications) {
+pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, client: &Arc<Mutex<Client>>, state: &mut CoursesState, notifs: &mut Notifications) {
     ui.horizontal(|ui| {
         ui.heading("Cursos");
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -104,7 +106,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
     }
 
     if let Some(id) = confirm_delete_modal(ui.ctx(), &mut state.confirm_delete) {
-        match CourseDeleteUseCase::new(make_course_repo(client)).execute(id) {
+        match CourseDeleteUseCase::new(Arc::clone(repo)).execute(id) {
             Ok(_)  => { state.needs_reload = true; push_success(notifs, "Curso eliminado"); }
             Err(e) => push_error(notifs, e.to_string()),
         }

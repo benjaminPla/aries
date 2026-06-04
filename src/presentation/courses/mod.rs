@@ -15,8 +15,8 @@ use crate::{
         course_period::dto::CoursePeriodDto,
         teacher::dto::TeacherDto,
     },
-    domain::shared::value_objects::age_group::AgeGroup,
-    infrastructure::{course::CoursePgRepo, course_period::CoursePeriodPgRepo, teacher::TeacherPgRepo},
+    domain::{course::repository::CourseRepo, shared::value_objects::age_group::AgeGroup},
+    infrastructure::{course_period::CoursePeriodPgRepo, teacher::TeacherPgRepo},
     presentation::{push_error, Notifications},
 };
 
@@ -96,9 +96,6 @@ impl Default for CoursesState {
     }
 }
 
-pub fn make_course_repo(client: &Arc<Mutex<Client>>) -> Arc<CoursePgRepo> {
-    Arc::new(CoursePgRepo::new(Arc::clone(client)))
-}
 pub fn make_course_period_repo(client: &Arc<Mutex<Client>>) -> Arc<CoursePeriodPgRepo> {
     Arc::new(CoursePeriodPgRepo::new(Arc::clone(client)))
 }
@@ -125,18 +122,18 @@ pub fn clear_course_form(state: &mut CoursesState) {
     state.updated_at   = String::new();
 }
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState, notifs: &mut Notifications) {
+pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, client: &Arc<Mutex<Client>>, state: &mut CoursesState, notifs: &mut Notifications) {
     if state.needs_reload {
         state.needs_reload = false;
-        match CourseGetAllUseCase::new(make_course_repo(client)).execute() {
+        match CourseGetAllUseCase::new(Arc::clone(repo)).execute() {
             Ok(courses) => { state.courses = courses; }
             Err(e)      => push_error(notifs, e.to_string()),
         }
     }
 
     match state.mode {
-        Mode::List                            => list::show(ui, client, state, notifs),
-        Mode::CreateCourse | Mode::EditCourse => form::show(ui, client, state, notifs),
+        Mode::List                            => list::show(ui, repo, client, state, notifs),
+        Mode::CreateCourse | Mode::EditCourse => form::show(ui, repo, state, notifs),
         Mode::Detail                          => detail::show(ui, client, state, notifs),
     }
 }

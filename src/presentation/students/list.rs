@@ -1,18 +1,18 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use eframe::egui;
-use postgres::Client;
 use uuid::Uuid;
 
 use crate::application::student::delete::StudentDeleteUseCase;
+use crate::domain::student::repository::StudentRepo;
 use crate::presentation::{confirm_delete_modal, fmt_dt, push_error, push_success, Notifications};
 use crate::presentation::table::{self, Column};
 
-use super::{Mode, StudentsState, clear_form, make_repo};
+use super::{Mode, StudentsState, clear_form};
 
 enum Action { Open, Edit, Delete }
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut StudentsState, notifs: &mut Notifications) {
+pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn StudentRepo>, state: &mut StudentsState, notifs: &mut Notifications) {
     ui.horizontal(|ui| {
         ui.heading("Alumnos");
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -100,7 +100,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
     }
 
     if let Some(id) = confirm_delete_modal(ui.ctx(), &mut state.confirm_delete) {
-        match StudentDeleteUseCase::new(make_repo(client)).execute(id) {
+        match StudentDeleteUseCase::new(Arc::clone(repo)).execute(id) {
             Ok(_)  => { state.needs_reload = true; push_success(notifs, "Alumno eliminado"); }
             Err(e) => push_error(notifs, e.to_string()),
         }

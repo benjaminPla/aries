@@ -17,13 +17,14 @@ use crate::{
         student::{dto::StudentDto, get_all::StudentGetAllUseCase},
         student_ledger::LedgerEntry,
     },
-    domain::student::AgeGroup,
+    domain::{
+        student::{repository::StudentRepo, AgeGroup},
+    },
     infrastructure::{
         course::CoursePgRepo,
         course_period::CoursePeriodPgRepo,
         enrollment::EnrollmentPgRepo,
         payment::PaymentPgRepo,
-        student::StudentPgRepo,
     },
     presentation::{push_error, Notifications},
 };
@@ -117,9 +118,6 @@ impl Default for StudentsState {
     }
 }
 
-pub fn make_repo(client: &Arc<Mutex<Client>>) -> Arc<StudentPgRepo> {
-    Arc::new(StudentPgRepo::new(Arc::clone(client)))
-}
 pub fn make_enrollment_repo(client: &Arc<Mutex<Client>>) -> Arc<EnrollmentPgRepo> {
     Arc::new(EnrollmentPgRepo::new(Arc::clone(client)))
 }
@@ -164,18 +162,18 @@ pub fn clear_form(state: &mut StudentsState) {
     state.updated_at = String::new();
 }
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut StudentsState, notifs: &mut Notifications) {
+pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn StudentRepo>, client: &Arc<Mutex<Client>>, state: &mut StudentsState, notifs: &mut Notifications) {
     if state.needs_reload {
         state.needs_reload = false;
-        match StudentGetAllUseCase::new(make_repo(client)).execute() {
+        match StudentGetAllUseCase::new(Arc::clone(repo)).execute() {
             Ok(students) => { state.students = students; }
             Err(e)       => push_error(notifs, e.to_string()),
         }
     }
 
     match state.mode {
-        Mode::List                => list::show(ui, client, state, notifs),
-        Mode::Create | Mode::Edit => form::show(ui, client, state, notifs),
+        Mode::List                => list::show(ui, repo, state, notifs),
+        Mode::Create | Mode::Edit => form::show(ui, repo, state, notifs),
         Mode::Detail              => detail::show(ui, client, state, notifs),
     }
 }

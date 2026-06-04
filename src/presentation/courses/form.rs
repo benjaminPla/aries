@@ -1,20 +1,19 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use eframe::egui;
-use postgres::Client;
 
 use crate::{
     application::course::{
         create::{CourseCreateInput, CourseCreateUseCase},
         update::{CourseUpdateInput, CourseUpdateUseCase},
     },
-    domain::shared::value_objects::age_group::AgeGroup,
+    domain::{course::repository::CourseRepo, shared::value_objects::age_group::AgeGroup},
     presentation::{push_error, push_success, Notifications},
 };
 
-use super::{CoursesState, Mode, clear_course_form, make_course_repo, parse_price};
+use super::{CoursesState, Mode, clear_course_form, parse_price};
 
-pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesState, notifs: &mut Notifications) {
+pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, state: &mut CoursesState, notifs: &mut Notifications) {
     let title = if state.mode == Mode::CreateCourse { "Nuevo Curso" } else { "Editar Curso" };
 
     ui.horizontal(|ui| {
@@ -96,11 +95,11 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
         let notes = if state.course_notes.trim().is_empty() { None } else { Some(state.course_notes.clone()) };
 
         let result = match state.mode {
-            Mode::CreateCourse => CourseCreateUseCase::new(make_course_repo(client)).execute(CourseCreateInput {
+            Mode::CreateCourse => CourseCreateUseCase::new(Arc::clone(repo)).execute(CourseCreateInput {
                 teacher_id, name: state.name.clone(), age_group: state.age_group,
                 capacity, month_price_cents, class_price_cents, notes,
             }),
-            Mode::EditCourse => CourseUpdateUseCase::new(make_course_repo(client)).execute(CourseUpdateInput {
+            Mode::EditCourse => CourseUpdateUseCase::new(Arc::clone(repo)).execute(CourseUpdateInput {
                 id: state.editing_id.unwrap(), teacher_id, name: state.name.clone(),
                 age_group: state.age_group, capacity, month_price_cents, class_price_cents, notes,
             }),
