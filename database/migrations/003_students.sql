@@ -1,22 +1,18 @@
-DO $$ BEGIN
-    CREATE TYPE age_group AS ENUM ('adult', 'minor');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+CREATE TYPE age_group AS ENUM ('adult', 'minor');
 
 CREATE TABLE IF NOT EXISTS students (
     age_group       age_group         NOT NULL,
     created_at      TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
     email           VARCHAR(254)      NOT NULL,
-    first_name      VARCHAR(100)      NOT NULL,
+    first_name      VARCHAR(50)       NOT NULL,
     id              UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
-    last_name       VARCHAR(100)      NOT NULL,
+    last_name       VARCHAR(50)       NOT NULL,
     notes           VARCHAR(500),
     phone           VARCHAR(25)       NOT NULL,
     updated_at      TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
 
     CONSTRAINT students_email_unique
         UNIQUE (email),
-
     CONSTRAINT students_email_format
         CHECK (email ~* '^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$'),
 

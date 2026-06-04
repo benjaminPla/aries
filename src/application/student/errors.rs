@@ -3,6 +3,7 @@ use crate::domain::{
         email::EmailError,
         first_name::FirstNameError,
         last_name::LastNameError,
+        notes::NotesError,
         phone::PhoneError,
     },
     student::repository::StudentRepoError,
@@ -21,6 +22,7 @@ pub enum StudentAppError {
 impl From<EmailError>     for StudentAppError { fn from(e: EmailError)     -> Self { Self::Validation(e.to_string()) } }
 impl From<FirstNameError> for StudentAppError { fn from(e: FirstNameError) -> Self { Self::Validation(e.to_string()) } }
 impl From<LastNameError>  for StudentAppError { fn from(e: LastNameError)  -> Self { Self::Validation(e.to_string()) } }
+impl From<NotesError>     for StudentAppError { fn from(e: NotesError)     -> Self { Self::Validation(e.to_string()) } }
 impl From<PhoneError>     for StudentAppError { fn from(e: PhoneError)     -> Self { Self::Validation(e.to_string()) } }
 
 impl From<StudentRepoError> for StudentAppError {

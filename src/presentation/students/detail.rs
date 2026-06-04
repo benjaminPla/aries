@@ -85,6 +85,12 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
             ui.label(n.as_str());
             ui.end_row();
         }
+        ui.label(egui::RichText::new("Creado").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(fmt_dt(student.created_at));
+        ui.end_row();
+        ui.label(egui::RichText::new("Editado").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(fmt_dt(student.updated_at));
+        ui.end_row();
     });
     ui.add_space(4.0);
 

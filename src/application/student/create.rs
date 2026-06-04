@@ -7,6 +7,7 @@ use crate::{
             email::Email,
             first_name::FirstName,
             last_name::LastName,
+            notes::Notes,
             phone::Phone,
         },
         student::{repository::StudentRepo, AgeGroup, Student},
@@ -35,8 +36,9 @@ impl StudentCreateUseCase {
         let email      = Email::new(input.email)?;
         let first_name = FirstName::new(input.first_name)?;
         let last_name  = LastName::new(input.last_name)?;
+        let notes      = input.notes.map(Notes::new).transpose()?;
         let phone      = Phone::new(input.phone)?;
-        let student    = Student::new(input.age_group, email, first_name, last_name, input.notes, phone);
+        let student    = Student::new(input.age_group, email, first_name, last_name, notes, phone);
         self.student_repo.create(&student)?;
         log::info!("[student] created: id={}", student.id());
         Ok(())

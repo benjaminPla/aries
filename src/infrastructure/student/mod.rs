@@ -9,6 +9,7 @@ use crate::domain::{
         email::Email,
         first_name::FirstName,
         last_name::LastName,
+        notes::Notes,
         phone::Phone,
     },
     student::{
@@ -49,6 +50,7 @@ fn row_to_student(row: &Row) -> Result<Student, StudentRepoError> {
     let email      = Email::new(email).map_err(|e| StudentRepoError::Database(e.to_string()))?;
     let first_name = FirstName::new(first_name).map_err(|e| StudentRepoError::Database(e.to_string()))?;
     let last_name  = LastName::new(last_name).map_err(|e| StudentRepoError::Database(e.to_string()))?;
+    let notes      = notes.map(|s| Notes::new(s).map_err(|e| StudentRepoError::Database(e.to_string()))).transpose()?;
     let phone      = Phone::new(phone).map_err(|e| StudentRepoError::Database(e.to_string()))?;
     let age_group  = AgeGroup::from_db_str(&age_group)
         .ok_or_else(|| StudentRepoError::Database(format!("unknown age_group: {age_group}")))?;
@@ -71,10 +73,10 @@ impl StudentRepo for StudentPgRepo {
                  VALUES ($1, $2, $3, $4, $5, $6, $7::text::age_group)",
                 &[
                     &student.id(),
-                    &student.first_name().value(),
-                    &student.last_name().value(),
-                    &student.phone().value(),
-                    &student.email().value(),
+                    &student.first_name(),
+                    &student.last_name(),
+                    &student.phone(),
+                    &student.email(),
                     &notes,
                     &student.age_group().as_db_str(),
                 ],
@@ -94,7 +96,7 @@ impl StudentRepo for StudentPgRepo {
     }
 
     fn get_all(&self) -> Result<Vec<Student>, StudentRepoError> {
-        let query = format!("{SELECT} ORDER BY last_name, first_name");
+        let query = format!("{SELECT} ORDER BY first_name, last_name");
         let rows = self.client
             .lock()
             .unwrap()
@@ -109,7 +111,7 @@ impl StudentRepo for StudentPgRepo {
             .lock()
             .unwrap()
             .query_opt(&query, &[&id])
-            .map_err(|e| StudentRepoError::Database(e.to_string()))?
+            .map_err(pg_err)?
             .ok_or(StudentRepoError::NotFound(id))?;
         row_to_student(&row)
     }
@@ -125,10 +127,10 @@ impl StudentRepo for StudentPgRepo {
                      notes = $5, age_group = $6::text::age_group
                  WHERE id = $7",
                 &[
-                    &student.first_name().value(),
-                    &student.last_name().value(),
-                    &student.phone().value(),
-                    &student.email().value(),
+                    &student.first_name(),
+                    &student.last_name(),
+                    &student.phone(),
+                    &student.email(),
                     &notes,
                     &student.age_group().as_db_str(),
                     &student.id(),

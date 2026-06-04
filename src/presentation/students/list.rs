@@ -26,10 +26,16 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
 
     let mut action: Option<(Action, Uuid)> = None;
 
-    let f = state.list_filter.to_lowercase();
+    let fn_f = state.filter_first_name.to_lowercase();
+    let ln_f = state.filter_last_name.to_lowercase();
+    let em_f = state.filter_email.to_lowercase();
+
     let visible: Vec<_> = state.students.iter()
-        .filter(|s| f.is_empty() ||
-            format!("{} {}", s.first_name, s.last_name).to_lowercase().contains(&f))
+        .filter(|s| {
+            (fn_f.is_empty() || s.first_name.to_lowercase().contains(&fn_f)) &&
+            (ln_f.is_empty() || s.last_name.to_lowercase().contains(&ln_f))  &&
+            (em_f.is_empty() || s.email.to_lowercase().contains(&em_f))
+        })
         .cloned()
         .collect();
 
@@ -41,9 +47,9 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
         .column(Column::auto().at_least(60.0))
         .column(Column::auto())
         .header(table::header_height(), |mut h| {
-            h.col(|ui| table::head_filter(ui, "Nombre", &mut state.list_filter));
-            h.col(|ui| table::head(ui, "Apellido"));
-            h.col(|ui| table::head(ui, "Email"));
+            h.col(|ui| table::head_filter(ui, "Nombre",   &mut state.filter_first_name));
+            h.col(|ui| table::head_filter(ui, "Apellido", &mut state.filter_last_name));
+            h.col(|ui| table::head_filter(ui, "Email",    &mut state.filter_email));
             h.col(|ui| table::head(ui, "Teléfono"));
             h.col(|ui| table::head(ui, "Tipo"));
             h.col(|ui| table::head(ui, "Acciones"));
@@ -77,7 +83,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
             }
             Action::Edit => {
                 if let Some(s) = state.students.iter().find(|s| s.id == id) {
-                    state.age_group  = s.age_group.clone();
+                    state.age_group  = s.age_group;
                     state.first_name = s.first_name.clone();
                     state.last_name  = s.last_name.clone();
                     state.email      = s.email.clone();

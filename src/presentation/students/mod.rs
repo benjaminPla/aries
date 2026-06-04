@@ -34,8 +34,10 @@ pub enum Mode { #[default] List, Create, Edit, Detail }
 pub struct StudentsState {
     pub mode:         Mode,
     pub students:     Vec<StudentDto>,
-    pub needs_reload: bool,
-    pub list_filter:  String,
+    pub needs_reload:      bool,
+    pub filter_first_name: String,
+    pub filter_last_name:  String,
+    pub filter_email:      String,
 
     // form
     pub editing_id: Option<Uuid>,
@@ -83,9 +85,11 @@ impl Default for StudentsState {
             mode:                   Mode::List,
             students:               Vec::new(),
             needs_reload:           true,
-            list_filter:            String::new(),
+            filter_first_name:      String::new(),
+            filter_last_name:       String::new(),
+            filter_email:           String::new(),
             editing_id:             None,
-            age_group:              AgeGroup::default(),
+            age_group:              AgeGroup::Adult,
             first_name:             String::new(),
             last_name:              String::new(),
             email:                  String::new(),
@@ -150,7 +154,7 @@ pub fn clear_detail_state(state: &mut StudentsState) {
 
 pub fn clear_form(state: &mut StudentsState) {
     state.editing_id = None;
-    state.age_group  = AgeGroup::default();
+    state.age_group  = AgeGroup::Adult;
     state.first_name = String::new();
     state.last_name  = String::new();
     state.email      = String::new();
