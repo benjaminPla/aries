@@ -1,82 +1,67 @@
 pub mod repository;
+pub mod value_objects;
 
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum PaymentStatus {
-    Pending,
-    Paid,
-    Overdue,
-}
-
-impl PaymentStatus {
-    pub fn from_db_str(s: &str) -> Option<Self> {
-        match s {
-            "pending" => Some(Self::Pending),
-            "paid"    => Some(Self::Paid),
-            "overdue" => Some(Self::Overdue),
-            _         => None,
-        }
-    }
-
-    pub fn label(&self) -> &str {
-        match self {
-            Self::Pending => "Pendiente",
-            Self::Paid    => "Pagado",
-            Self::Overdue => "Vencido",
-        }
-    }
-}
+use crate::domain::payment::value_objects::payment_method::PaymentMethod;
 
 pub struct Payment {
-    id:             Uuid,
-    student_id:     Uuid,
     amount_cents:   i32,
-    due_date:       NaiveDate,
-    paid_at:        Option<DateTime<Utc>>,
-    payment_method: Option<String>,
-    status:         PaymentStatus,
-    notes:          Option<String>,
     created_at:     DateTime<Utc>,
+    id:             Uuid,
+    notes:          Option<String>,
+    paid_at:        DateTime<Utc>,
+    payment_method: PaymentMethod,
+    student_id:     Uuid,
 }
 
 impl Payment {
-    pub fn new(student_id: Uuid, amount_cents: i32, due_date: NaiveDate, notes: Option<String>) -> Self {
+    pub fn new(
+        amount_cents:   i32,
+        notes:          Option<String>,
+        paid_at:        DateTime<Utc>,
+        payment_method: PaymentMethod,
+        student_id:     Uuid
+    ) -> Self {
         Self {
-            id:             Uuid::new_v4(),
-            student_id,
             amount_cents,
-            due_date,
-            paid_at:        None,
-            payment_method: None,
-            status:         PaymentStatus::Pending,
-            notes,
             created_at:     Utc::now(),
+            id:             Uuid::new_v4(),
+            notes,
+            paid_at,
+            payment_method,
+            student_id,
         }
     }
 
     pub fn reconstitute(
-        id:             Uuid,
-        student_id:     Uuid,
         amount_cents:   i32,
-        due_date:       NaiveDate,
-        paid_at:        Option<DateTime<Utc>>,
-        payment_method: Option<String>,
-        status:         PaymentStatus,
-        notes:          Option<String>,
         created_at:     DateTime<Utc>,
+        id:             Uuid,
+        notes:          Option<String>,
+        paid_at:        DateTime<Utc>,
+        payment_method: PaymentMethod,
+        student_id:     Uuid,
     ) -> Self {
-        Self { id, student_id, amount_cents, due_date, paid_at, payment_method, status, notes, created_at }
+        Self {
+            amount_cents,
+            created_at,
+            id,
+            notes,
+            paid_at,
+            payment_method,
+            student_id
+        }
     }
 
-    pub fn id(&self)             -> Uuid                  { self.id }
-    pub fn student_id(&self)     -> Uuid                  { self.student_id }
-    pub fn amount_cents(&self)   -> i32                   { self.amount_cents }
-    pub fn due_date(&self)       -> NaiveDate             { self.due_date }
-    pub fn paid_at(&self)        -> Option<DateTime<Utc>> { self.paid_at }
-    pub fn payment_method(&self) -> Option<&str>          { self.payment_method.as_deref() }
-    pub fn status(&self)         -> &PaymentStatus        { &self.status }
-    pub fn notes(&self)          -> Option<&str>          { self.notes.as_deref() }
-    pub fn created_at(&self)     -> DateTime<Utc>         { self.created_at }
+    // ── Getters ──────────────────────────────────────────────────────────────
+
+    pub fn amount_cents(&self)   -> i32           { self.amount_cents }
+    pub fn created_at(&self)     -> DateTime<Utc> { self.created_at }
+    pub fn id(&self)             -> Uuid          { self.id }
+    pub fn notes(&self)          -> Option<&str>  { self.notes.as_deref() }
+    pub fn paid_at(&self)        -> DateTime<Utc> { self.paid_at }
+    pub fn payment_method(&self) -> &str          { self.payment_method.value() }
+    pub fn student_id(&self)     -> Uuid          { self.student_id }
 }

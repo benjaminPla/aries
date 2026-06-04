@@ -1,12 +1,12 @@
 CREATE TABLE IF NOT EXISTS enrollments (
-    id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id         UUID        NOT NULL REFERENCES students(id),
-    course_period_id   UUID        NOT NULL REFERENCES course_periods(id) ON DELETE CASCADE,
-    agreed_price_cents INTEGER     NOT NULL,
-    dropped_at         TIMESTAMPTZ,
-    enrolled_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    notes              VARCHAR(500),
+    price_cents      INTEGER       NOT NULL,
+    course_period_id UUID          NOT NULL REFERENCES course_periods(id) ON DELETE CASCADE,
+    dropped_at       TIMESTAMPTZ,
+    enrolled_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    id               UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+    notes            VARCHAR(500),
+    student_id       UUID          NOT NULL REFERENCES students(id),
+    updated_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
 
     CONSTRAINT enrollments_unique
         UNIQUE (student_id, course_period_id),

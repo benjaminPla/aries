@@ -1,10 +1,10 @@
 CREATE TABLE IF NOT EXISTS classes (
-    id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     course_period_id UUID         NOT NULL REFERENCES course_periods(id) ON DELETE CASCADE,
-    name             VARCHAR(100) NOT NULL,
-    scheduled_at     TIMESTAMPTZ  NOT NULL,
-    notes            VARCHAR(500),
     created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    name             VARCHAR(100) NOT NULL,
+    notes            VARCHAR(500),
+    scheduled_at     TIMESTAMPTZ  NOT NULL,
     updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 

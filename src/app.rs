@@ -5,12 +5,16 @@ use postgres::Client;
 use postgresql_embedded::PostgreSQL;
 use tokio::runtime::Runtime;
 
-use crate::presentation::{
-    render_notifications,
-    courses::{self, CoursesState},
-    students::{self, StudentsState},
-    teachers::{self, TeachersState},
-    Notifications,
+use crate::{
+    domain::teacher::repository::TeacherRepo,
+    infrastructure::teacher::TeacherPgRepo,
+    presentation::{
+        render_notifications,
+        courses::{self, CoursesState},
+        students::{self, StudentsState},
+        teachers::{self, TeachersState},
+        Notifications,
+    },
 };
 
 pub struct LoadingStatus {
@@ -110,6 +114,7 @@ enum View {
 
 struct App {
     client:         Arc<Mutex<Client>>,
+    teacher_repo:   Arc<dyn TeacherRepo>,
     current_view:   View,
     courses_state:  CoursesState,
     students_state: StudentsState,
@@ -120,6 +125,7 @@ struct App {
 impl App {
     fn new(client: Arc<Mutex<Client>>) -> Self {
         Self {
+            teacher_repo:   Arc::new(TeacherPgRepo::new(Arc::clone(&client))),
             client,
             current_view:   View::Students,
             courses_state:  CoursesState::default(),
@@ -152,7 +158,7 @@ impl App {
                 match self.current_view {
                     View::Students => students::show(ui, &self.client, &mut self.students_state, &mut self.notifications),
                     View::Courses  => courses::show(ui, &self.client, &mut self.courses_state,   &mut self.notifications),
-                    View::Teachers => teachers::show(ui, &self.client, &mut self.teachers_state, &mut self.notifications),
+                    View::Teachers => teachers::show(ui, &self.teacher_repo, &mut self.teachers_state, &mut self.notifications),
                 }
             });
     }

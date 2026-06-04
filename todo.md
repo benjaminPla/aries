@@ -1,5 +1,5 @@
-- [ ] BUG: enrollments unique eveytime or almost always
-- [ ] alpabetically order teachers courses and students get_all views
+- [ ] check ~/notes.md -> copy teaits vs & -> apply
+- [x] alpabetically order teachers courses and students get_all views
 - [x] fix shitty notification, it's growing horixoanlly with a shitty slow aniation and the x (close) it's not visible, it must apear and disapear and thats all. if the ui is complex just size it on the main panel or shomething not complex. it must be a global vec one0
 - [x] "Guardar" and "cancelar" buttons on horixontal forms must be right positioned
 - [x] stutdent info not that compact, columns like and leableled (like courses)
@@ -7,7 +7,7 @@
 - [x] curses periods add furute or not_started or something on future
 - [x] ux -> registry payment bad date format, default to now()
 - [x] fix notifications ui
-- [ ] add filters + selectors (same input) (ei: enrollements view students and courses)
+- [x] add filters + selectors (same input)
 - [x] add Cargo.toml version, if possible, to 1.0
 - [x] check discounts and partial payments strategy, idea: add payment + a discount row
 - [x] enrollements status need to be automatically completed on course now >= endtime

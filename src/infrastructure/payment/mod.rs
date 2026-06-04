@@ -6,7 +6,8 @@ use uuid::Uuid;
 
 use crate::domain::payment::{
     repository::{PaymentRepo, PaymentRepoError},
-    Payment, PaymentStatus,
+    value_objects::payment_status::PaymentStatus,
+    Payment,
 };
 
 pub struct PaymentPgRepo {

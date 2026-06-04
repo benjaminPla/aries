@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::domain::{
     enrollment::repository::EnrollmentRepo,
-    payment::{PaymentStatus, repository::PaymentRepo},
+    payment::{repository::PaymentRepo},
 };
 
 #[derive(Clone, PartialEq)]

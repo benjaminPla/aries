@@ -1,15 +1,15 @@
 CREATE TABLE IF NOT EXISTS class_bookings (
-    id              UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id      UUID           NOT NULL REFERENCES students(id),
-    class_id        UUID           NOT NULL REFERENCES classes(id),
     amount_cents    INTEGER        NOT NULL,
+    class_id        UUID           NOT NULL REFERENCES classes(id),
+    created_at      TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
     discount_cents  INTEGER        NOT NULL DEFAULT 0,
     discount_reason VARCHAR(500),
+    id              UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+    notes           VARCHAR(500),
     paid_at         TIMESTAMPTZ,
     payment_method  payment_method,
     status          payment_status NOT NULL DEFAULT 'pending',
-    notes           VARCHAR(500),
-    created_at      TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    student_id      UUID           NOT NULL REFERENCES students(id),
     updated_at      TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
 
     CONSTRAINT class_bookings_unique

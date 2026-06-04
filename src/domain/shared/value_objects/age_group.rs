@@ -1,6 +1,5 @@
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AgeGroup {
-    #[default]
     Adult,
     Minor,
 }
