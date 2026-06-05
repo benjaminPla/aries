@@ -20,6 +20,7 @@ pub struct LedgerEntry {
     pub id:              Uuid,
     pub kind:            LedgerKind,
     pub description:     String,
+    pub payment_method:  Option<String>,
     pub amount_cents:    i32,
     pub running_balance: i32,
     pub date:            DateTime<Utc>,
@@ -54,6 +55,7 @@ impl StudentLedgerUseCase {
                 id:              e.id(),
                 kind:            LedgerKind::Debt,
                 description:     format!("Inscripción: {} — {}", e.course_name(), e.period_label()),
+                payment_method:  None,
                 amount_cents:    e.agreed_price_cents(),
                 running_balance: 0,
                 date:            e.enrolled_at(),
@@ -62,20 +64,17 @@ impl StudentLedgerUseCase {
 
         for p in &payments {
             let method = match p.payment_method() {
-                "cash"     => "efectivo",
-                "transfer" => "transferencia",
-                "card"     => "tarjeta",
-                "discount" => "descuento",
+                "cash"     => "Efectivo",
+                "transfer" => "Transferencia",
+                "card"     => "Tarjeta",
+                "discount" => "Descuento",
                 other      => other,
-            };
-            let desc = match p.notes() {
-                Some(n) => format!("Pago ({}) — {}", method, n),
-                None    => format!("Pago ({})", method),
             };
             raw.push((p.paid_at(), LedgerEntry {
                 id:              p.id(),
                 kind:            LedgerKind::Credit,
-                description:     desc,
+                description:     p.notes().map(str::to_string).unwrap_or_else(|| "—".into()),
+                payment_method:  Some(method.to_string()),
                 amount_cents:    p.amount_cents(),
                 running_balance: 0,
                 date:            p.paid_at(),

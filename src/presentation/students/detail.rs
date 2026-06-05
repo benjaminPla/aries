@@ -57,10 +57,15 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
     }
     ui.separator();
 
-    // ── Información ───────────────────────────────────────────────────────────
+    // ── Information ──────────────────────────────────────────────────────────
     section_header(ui, "Información");
-    ui.heading(format!("{} {}", student.first_name, student.last_name));
     egui::Grid::new("student_detail_info").num_columns(2).spacing([16.0, 2.0]).show(ui, |ui| {
+        ui.label(egui::RichText::new("Nombre").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(&student.first_name);
+        ui.end_row();
+        ui.label(egui::RichText::new("Apellido").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(&student.last_name);
+        ui.end_row();
         ui.label(egui::RichText::new("Grupo").color(crate::theme::colors::TEXT_MUTED));
         ui.label(student.age_group.label());
         ui.end_row();
@@ -84,41 +89,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
     });
     ui.add_space(4.0);
 
-    // ── Balance + action buttons ──────────────────────────────────────────────
-    ui.horizontal(|ui| {
-        let (bal_color, bal_text) = if state.balance_cents >= 0 {
-            (crate::theme::colors::SUCCESS, format!("Balance: +{}", fmt_ars(state.balance_cents)))
-        } else {
-            (crate::theme::colors::ERROR, format!("Balance: {}", fmt_ars(state.balance_cents)))
-        };
-        ui.colored_label(bal_color, bal_text);
-
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if ui.button("+ Pago").clicked() && !state.show_payment_form {
-                state.payment_amount    = String::new();
-                state.payment_method    = "cash".into();
-                state.payment_paid_at   = today();
-                state.payment_notes     = String::new();
-                state.show_payment_form = true;
-                state.show_enroll_form  = false;
-            }
-            if ui.button("+ Inscribir").clicked() && !state.show_enroll_form {
-                if let Ok(courses) = CourseGetAllUseCase::new(make_course_repo(client)).execute() {
-                    state.enroll_courses       = courses.into_iter().filter(|c| c.age_group == student.age_group).collect();
-                    state.enroll_sel_course    = None;
-                    state.enroll_course_filter = String::new();
-                    state.enroll_sel_period    = None;
-                    state.enroll_period_filter = String::new();
-                    state.enroll_periods       = Vec::new();
-                    state.show_enroll_form     = true;
-                    state.show_payment_form    = false;
-                }
-            }
-        });
-    });
-    ui.separator();
-
-    // ── Enroll form ───────────────────────────────────────────────────────────
+    // ── Saldo section header / forms ─────────────────────────────────────────
     if state.show_enroll_form {
         ui.horizontal(|ui| {
             ui.label("Curso");
@@ -210,10 +181,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
             });
         });
         ui.separator();
-    }
-
-    // ── Payment form ──────────────────────────────────────────────────────────
-    if state.show_payment_form {
+    } else if state.show_payment_form {
         ui.horizontal(|ui| {
             ui.label("Monto");
             ui.add(egui::TextEdit::singleline(&mut state.payment_amount).desired_width(80.0));
@@ -265,20 +233,52 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
             });
         });
         ui.separator();
+    } else {
+        ui.horizontal(|ui| {
+            section_header(ui, "Saldo");
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if ui.button("+ Pago").clicked() {
+                    state.payment_amount  = String::new();
+                    state.payment_method  = "cash".into();
+                    state.payment_paid_at = today();
+                    state.payment_notes   = String::new();
+                    state.show_payment_form = true;
+                }
+                if ui.button("+ Inscribir").clicked() {
+                    if let Ok(courses) = CourseGetAllUseCase::new(make_course_repo(client)).execute() {
+                        state.enroll_courses       = courses.into_iter().filter(|c| c.age_group == student.age_group).collect();
+                        state.enroll_sel_course    = None;
+                        state.enroll_course_filter = String::new();
+                        state.enroll_sel_period    = None;
+                        state.enroll_period_filter = String::new();
+                        state.enroll_periods       = Vec::new();
+                        state.show_enroll_form     = true;
+                    }
+                }
+                let (color, sign) = if state.balance_cents >= 0 {
+                    (crate::theme::colors::SUCCESS, "+")
+                } else {
+                    (crate::theme::colors::ERROR, "")
+                };
+                ui.colored_label(color, format!("{sign}{}", fmt_ars(state.balance_cents)));
+            });
+        });
     }
 
-    // ── Ledger ────────────────────────────────────────────────────────────────
+    // ── Ledger table ──────────────────────────────────────────────────────────
     let mut action: Option<(LedgerAction, Uuid)> = None;
 
     table::builder(ui)
-        .column(Column::auto().at_least(110.0))
-        .column(Column::remainder().at_least(150.0))
-        .column(Column::exact(80.0))
-        .column(Column::exact(90.0))
-        .column(Column::auto().at_least(40.0))
+        .column(Column::auto())
+        .column(Column::remainder())
+        .column(Column::auto())
+        .column(Column::auto())
+        .column(Column::auto())
+        .column(Column::auto())
         .header(table::header_height(), |mut h| {
             h.col(|ui| table::head(ui, "Fecha"));
             h.col(|ui| table::head(ui, "Descripción"));
+            h.col(|ui| table::head(ui, "Método"));
             h.col(|ui| table::head(ui, "Monto"));
             h.col(|ui| table::head(ui, "Balance"));
             h.col(|ui| table::head(ui, "Acciones"));
@@ -288,6 +288,12 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                 body.row(table::row_height(), |mut row| {
                     row.col(|ui| { ui.label(fmt_dt(entry.date)); });
                     row.col(|ui| { ui.label(&entry.description); });
+                    row.col(|ui| {
+                        match &entry.payment_method {
+                            Some(m) => { ui.label(m); }
+                            None    => { ui.label("—"); }
+                        }
+                    });
                     row.col(|ui| {
                         match entry.kind {
                             LedgerKind::Debt => ui.colored_label(
@@ -310,7 +316,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                         ui.colored_label(color, format!("{sign}{}", fmt_ars(entry.running_balance)));
                     });
                     row.col(|ui| {
-                        if ui.small_button("🗑").clicked() {
+                        if ui.small_button("x").clicked() {
                             action = Some((
                                 match entry.kind {
                                     LedgerKind::Debt   => LedgerAction::DeleteEnrollment,

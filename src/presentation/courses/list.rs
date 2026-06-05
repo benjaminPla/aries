@@ -27,6 +27,9 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, client: &Arc<Mutex<Cl
                 }
                 state.mode = Mode::CreateCourse;
             }
+            if ui.button("Actualizar").clicked() {
+                state.needs_reload = true;
+            }
         });
     });
     ui.separator();
@@ -41,11 +44,11 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, client: &Arc<Mutex<Cl
     let mut action: Option<(Action, Uuid)> = None;
 
     table::builder(ui)
-        .column(Column::remainder().at_least(120.0))
-        .column(Column::auto().at_least(60.0))
-        .column(Column::exact(50.0))
-        .column(Column::exact(80.0))
-        .column(Column::exact(80.0))
+        .column(Column::remainder())
+        .column(Column::auto())
+        .column(Column::auto())
+        .column(Column::auto())
+        .column(Column::auto())
         .column(Column::auto())
         .header(table::header_height(), |mut h| {
             h.col(|ui| table::head_filter(ui, "Nombre", &mut state.filter_name));
