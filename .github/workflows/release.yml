@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # - os: ubuntu-latest
+          #   artifact: babushka-linux-x86_64
+          #   binary: target/release/babushka
+
+          # - os: macos-latest
+          #   artifact: babushka-macos-x86_64
+          #   binary: target/release/babushka
+
+          - os: windows-latest
+            artifact: babushka-windows-x86_64.exe
+            binary: target/release/babushka.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      # - name: Install Linux system deps
+      #   if: runner.os == 'Linux'
+      #   run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Rename binary
+        shell: bash
+        run: cp ${{ matrix.binary }} ${{ matrix.artifact }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Delete existing latest release
+        run: gh release delete latest --yes --cleanup-tag || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create latest release
+        run: |
+          gh release create latest artifacts/* \
+            --title "Latest build ($(date -u '+%Y-%m-%d %H:%M UTC'))" \
+            --notes "**Windows**: click 'More info' → 'Run anyway' on first launch (unsigned binary).
+
+          First launch downloads the embedded database — internet required once." \
+            --prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
