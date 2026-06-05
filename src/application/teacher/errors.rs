@@ -32,6 +32,7 @@ impl From<TeacherRepoError> for TeacherAppError {
                 log::error!("[teacher] repo error: {msg}");
                 Self::Database
             }
+            TeacherRepoError::Duplicate(msg) => Self::Validation(msg),
             TeacherRepoError::NotFound(id) => {
                 log::warn!("[teacher] not found: {id}");
                 Self::NotFound

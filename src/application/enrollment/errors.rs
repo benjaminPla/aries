@@ -2,6 +2,8 @@ use crate::domain::enrollment::repository::EnrollmentRepoError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EnrollmentAppError {
+    #[error("{0}")]
+    Validation(String),
     #[error("error de base de datos")]
     Database,
     #[error("inscripción no encontrada")]
@@ -19,6 +21,7 @@ impl From<EnrollmentRepoError> for EnrollmentAppError {
                 log::error!("[enrollment] repo error: {msg}");
                 Self::Database
             }
+            EnrollmentRepoError::Duplicate(msg) => Self::Validation(msg),
             EnrollmentRepoError::NotFound(id) => {
                 log::warn!("[enrollment] not found: {id}");
                 Self::NotFound

@@ -29,11 +29,17 @@ impl StudentPgRepo {
 }
 
 fn pg_err(e: postgres::Error) -> StudentRepoError {
-    let msg = e
-        .as_db_error()
-        .map(|db| format!("{} (code={})", db.message(), db.code().code()))
-        .unwrap_or_else(|| format!("{e:?}"));
-    StudentRepoError::Database(msg)
+    if let Some(db) = e.as_db_error() {
+        if db.code().code() == "23505" {
+            let msg = match db.constraint().unwrap_or("") {
+                "students_email_unique" => "Ya existe un alumno con ese email",
+                _                      => "Ya existe un alumno con esos datos",
+            };
+            return StudentRepoError::Duplicate(msg.into());
+        }
+        return StudentRepoError::Database(format!("{} (code={})", db.message(), db.code().code()));
+    }
+    StudentRepoError::Database(format!("{e:?}"))
 }
 
 fn row_to_student(row: &Row) -> Result<Student, StudentRepoError> {

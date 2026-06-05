@@ -88,6 +88,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
         ui.end_row();
     });
     ui.add_space(4.0);
+    ui.separator();
 
     // ── Saldo section header / forms ─────────────────────────────────────────
     if state.show_enroll_form {
@@ -101,7 +102,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                         .unwrap_or_else(|| "Seleccionar...".into()),
                 )
                 .show_ui(ui, |ui| {
-                    ui.text_edit_singleline(&mut state.enroll_course_filter);
+                    ui.add(egui::TextEdit::singleline(&mut state.enroll_course_filter).id(egui::Id::new("enroll_course_filter")));
                     let cf = state.enroll_course_filter.to_lowercase();
                     let courses: Vec<_> = state.enroll_courses.iter()
                         .filter(|c| cf.is_empty() || c.name.to_lowercase().contains(&cf))
@@ -127,7 +128,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                         .unwrap_or_else(|| "Seleccionar...".into()),
                 )
                 .show_ui(ui, |ui| {
-                    ui.text_edit_singleline(&mut state.enroll_period_filter);
+                    ui.add(egui::TextEdit::singleline(&mut state.enroll_period_filter).id(egui::Id::new("enroll_period_filter")));
                     let pf = state.enroll_period_filter.to_lowercase();
                     let periods: Vec<_> = state.enroll_periods.iter()
                         .filter(|p| pf.is_empty() || p.label.to_lowercase().contains(&pf))

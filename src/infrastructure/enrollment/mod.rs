@@ -18,11 +18,17 @@ impl EnrollmentPgRepo {
 }
 
 fn pg_err(e: postgres::Error) -> EnrollmentRepoError {
-    let msg = e
-        .as_db_error()
-        .map(|db| format!("{} (code={})", db.message(), db.code().code()))
-        .unwrap_or_else(|| format!("{e:?}"));
-    EnrollmentRepoError::Database(msg)
+    if let Some(db) = e.as_db_error() {
+        if db.code().code() == "23505" {
+            let msg = match db.constraint().unwrap_or("") {
+                "enrollments_unique" => "El alumno ya está inscrito en ese período",
+                _                   => "Ya existe esa inscripción",
+            };
+            return EnrollmentRepoError::Duplicate(msg.into());
+        }
+        return EnrollmentRepoError::Database(format!("{} (code={})", db.message(), db.code().code()));
+    }
+    EnrollmentRepoError::Database(format!("{e:?}"))
 }
 
 fn row_to_enrollment(row: &Row) -> Result<Enrollment, EnrollmentRepoError> {

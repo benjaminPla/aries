@@ -12,8 +12,10 @@ pub trait TeacherRepo: Send + Sync {
 
 #[derive(Debug, thiserror::Error)]
 pub enum TeacherRepoError {
-    #[error("database error")]
+    #[error("database error: {0}")]
     Database(String),
+    #[error("{0}")]
+    Duplicate(String),
     #[error("teacher not found")]
     NotFound(Uuid),
 }

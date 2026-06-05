@@ -29,11 +29,18 @@ impl TeacherPgRepo {
 }
 
 fn pg_err(e: postgres::Error) -> TeacherRepoError {
-    let msg = e
-        .as_db_error()
-        .map(|db| format!("{} (code={})", db.message(), db.code().code()))
-        .unwrap_or_else(|| format!("{e:?}"));
-    TeacherRepoError::Database(msg)
+    if let Some(db) = e.as_db_error() {
+        if db.code().code() == "23505" {
+            let msg = match db.constraint().unwrap_or("") {
+                "teachers_email_unique" => "Ya existe un profesor con ese email",
+                "teachers_phone_unique" => "Ya existe un profesor con ese teléfono",
+                _                      => "Ya existe un profesor con esos datos",
+            };
+            return TeacherRepoError::Duplicate(msg.into());
+        }
+        return TeacherRepoError::Database(format!("{} (code={})", db.message(), db.code().code()));
+    }
+    TeacherRepoError::Database(format!("{e:?}"))
 }
 
 fn row_to_teacher(row: &Row) -> Result<Teacher, TeacherRepoError> {

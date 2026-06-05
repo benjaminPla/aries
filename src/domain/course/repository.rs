@@ -16,6 +16,8 @@ pub trait CourseRepo: Send + Sync {
 pub enum CourseRepoError {
     #[error("database error: {0}")]
     Database(String),
+    #[error("{0}")]
+    Duplicate(String),
     #[error("course not found: {0}")]
     NotFound(Uuid),
 }
