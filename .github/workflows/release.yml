@@ -8,7 +8,20 @@ permissions:
   contents: write
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.ver.outputs.TAG }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read version from Cargo.toml
+        id: ver
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "TAG=v$VERSION" >> $GITHUB_OUTPUT
+
   build:
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
@@ -54,33 +67,39 @@ jobs:
         shell: bash
         run: cp ${{ matrix.binary }} ${{ matrix.artifact }}
 
-      - name: Upload artifact
+      - name: Zip binary (for self-update)
+        shell: pwsh
+        run: Compress-Archive -Path babushka-windows-x86_64.exe -DestinationPath babushka-windows-x86_64.zip
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
+          name: windows-assets
+          path: |
+            babushka-windows-x86_64.exe
+            babushka-windows-x86_64.zip
 
   release:
-    needs: build
+    needs: [prepare, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
+          name: windows-assets
           path: artifacts
-          merge-multiple: true
 
-      - name: Delete existing latest release
-        run: gh release delete latest --yes --cleanup-tag || true
+      - name: Delete existing release if exists
+        run: gh release delete ${{ needs.prepare.outputs.tag }} --yes --cleanup-tag 2>/dev/null || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create latest release
+      - name: Create release
         run: |
-          gh release create latest artifacts/* \
-            --title "Latest build ($(date -u '+%Y-%m-%d %H:%M UTC'))" \
+          gh release create ${{ needs.prepare.outputs.tag }} artifacts/* \
+            --title "${{ needs.prepare.outputs.tag }}" \
             --notes "**Windows**: click 'More info' → 'Run anyway' on first launch (unsigned binary).
 
           First launch downloads the embedded database — internet required once." \

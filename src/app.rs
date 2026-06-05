@@ -25,6 +25,18 @@ use crate::{
     },
 };
 
+// ── Update state ──────────────────────────────────────────────────────────────
+
+#[derive(Clone)]
+pub enum UpdateState {
+    Available(String),   // version string of the new release
+    Downloading,
+    Done,
+    Failed(String),
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
 pub struct LoadingStatus {
     pub message:  String,
     pub progress: f32,
@@ -32,10 +44,13 @@ pub struct LoadingStatus {
 }
 
 pub struct InitResult {
-    pub pg:     PostgreSQL,
-    pub client: Client,
-    pub rt:     Runtime,
+    pub pg:               PostgreSQL,
+    pub client:           Client,
+    pub rt:               Runtime,
+    pub update_available: Option<UpdateState>,
 }
+
+// ── AppWrapper ────────────────────────────────────────────────────────────────
 
 enum AppState {
     Loading(Arc<Mutex<LoadingStatus>>),
@@ -55,10 +70,7 @@ impl AppWrapper {
 
 impl eframe::App for AppWrapper {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
-        let should_transition = match &self.state {
-            AppState::Loading(s) => s.lock().unwrap().result.is_some(),
-            _ => false,
-        };
+        let should_transition = matches!(&self.state, AppState::Loading(s) if s.lock().unwrap().result.is_some());
 
         if should_transition {
             let old = std::mem::replace(&mut self.state, AppState::Failed(String::new()));
@@ -66,7 +78,7 @@ impl eframe::App for AppWrapper {
                 match s.lock().unwrap().result.take() {
                     Some(Ok(init)) => {
                         self.state = AppState::Ready {
-                            app: App::new(Arc::new(Mutex::new(init.client))),
+                            app: App::new(Arc::new(Mutex::new(init.client)), init.update_available),
                             pg:  init.pg,
                             rt:  init.rt,
                         };
@@ -113,6 +125,8 @@ impl eframe::App for AppWrapper {
     }
 }
 
+// ── App ───────────────────────────────────────────────────────────────────────
+
 #[derive(PartialEq)]
 enum View {
     Students,
@@ -130,10 +144,11 @@ struct App {
     students_state: StudentsState,
     teachers_state: TeachersState,
     notifications:  Notifications,
+    update_state:   Arc<Mutex<Option<UpdateState>>>,
 }
 
 impl App {
-    fn new(client: Arc<Mutex<Client>>) -> Self {
+    fn new(client: Arc<Mutex<Client>>, update_available: Option<UpdateState>) -> Self {
         Self {
             course_repo:    Arc::new(CoursePgRepo::new(Arc::clone(&client))),
             student_repo:   Arc::new(StudentPgRepo::new(Arc::clone(&client))),
@@ -144,7 +159,56 @@ impl App {
             students_state: StudentsState::default(),
             teachers_state: TeachersState::default(),
             notifications:  Vec::new(),
+            update_state:   Arc::new(Mutex::new(update_available)),
         }
+    }
+
+    fn render_update_banner(&mut self, ui: &mut egui::Ui) {
+        let state = self.update_state.lock().unwrap().clone();
+        let Some(state) = state else { return };
+
+        use crate::theme::colors;
+
+        let (color, msg, show_button) = match &state {
+            UpdateState::Available(v) => (
+                colors::WARNING,
+                format!("Nueva versión disponible: v{v}"),
+                true,
+            ),
+            UpdateState::Downloading => (
+                colors::WARNING,
+                "Descargando actualización… no cerrar la aplicación.".into(),
+                false,
+            ),
+            UpdateState::Done => (
+                colors::SUCCESS,
+                "Actualización lista. Reiniciar para aplicar.".into(),
+                false,
+            ),
+            UpdateState::Failed(e) => (
+                colors::ERROR,
+                format!("Error al actualizar: {e}"),
+                false,
+            ),
+        };
+
+        ui.horizontal(|ui| {
+            ui.colored_label(color, msg);
+            if show_button && ui.button("Actualizar").clicked() {
+                let shared  = Arc::clone(&self.update_state);
+                let ctx     = ui.ctx().clone();
+                *shared.lock().unwrap() = Some(UpdateState::Downloading);
+                ctx.request_repaint();
+                std::thread::spawn(move || {
+                    match crate::updater::apply() {
+                        Ok(_)  => *shared.lock().unwrap() = Some(UpdateState::Done),
+                        Err(e) => *shared.lock().unwrap() = Some(UpdateState::Failed(e.to_string())),
+                    }
+                    ctx.request_repaint();
+                });
+            }
+        });
+        ui.separator();
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
@@ -166,6 +230,7 @@ impl App {
         egui::CentralPanel::default()
             .frame(panel_frame(colors::BACKGROUND))
             .show_inside(ui, |ui| {
+                self.render_update_banner(ui);
                 render_notifications(ui, &mut self.notifications);
                 match self.current_view {
                     View::Students => students::show(ui, &self.student_repo, &self.client, &mut self.students_state, &mut self.notifications),

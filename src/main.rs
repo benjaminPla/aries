@@ -4,6 +4,7 @@ mod domain;
 mod infrastructure;
 mod presentation;
 mod theme;
+mod updater;
 
 use std::sync::{Arc, Mutex};
 
@@ -22,7 +23,7 @@ use log4rs::{
 };
 use postgresql_embedded::PostgreSQL;
 
-use app::{AppWrapper, InitResult, LoadingStatus};
+use app::{AppWrapper, InitResult, LoadingStatus, UpdateState};
 
 fn init_logger() {
     let log_dir = dirs::data_local_dir()
@@ -120,9 +121,17 @@ fn main() {
         set("Aplicando migraciones…", 0.85);
         if let Err(e) = run_migrations(&mut client) { fail(e); return; }
 
+        set("Verificando actualizaciones…", 0.95);
+        let update = updater::check();
+
         let mut s  = status_bg.lock().unwrap();
         s.progress = 1.0;
-        s.result   = Some(Ok(InitResult { pg, client, rt }));
+        s.result   = Some(Ok(InitResult {
+            pg,
+            client,
+            rt,
+            update_available: update.map(|v| UpdateState::Available(v)),
+        }));
     });
 
     eframe::run_native(
