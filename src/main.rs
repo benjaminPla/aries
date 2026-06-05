@@ -53,20 +53,35 @@ fn init_logger() {
     log4rs::init_config(config).expect("failed to init logger");
 }
 
-// NOTE: only dev; prod must use a proper migration tool
 fn run_migrations(client: &mut postgres::Client) -> Result<(), String> {
-    let mut entries: Vec<_> = std::fs::read_dir("database/migrations")
-        .map_err(|e| e.to_string())?
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "sql"))
-        .collect();
+    client
+        .batch_execute(
+            "CREATE TABLE IF NOT EXISTS _migrations (filename TEXT PRIMARY KEY, applied_at TIMESTAMPTZ DEFAULT now())",
+        )
+        .map_err(|e| e.to_string())?;
 
-    entries.sort_by_key(|e| e.file_name());
+    let migrations: &[(&str, &str)] = &[
+        ("001_shared.sql",      include_str!("../database/migrations/001_shared.sql")),
+        ("002_teachers.sql",    include_str!("../database/migrations/002_teachers.sql")),
+        ("003_students.sql",    include_str!("../database/migrations/003_students.sql")),
+        ("004_courses.sql",     include_str!("../database/migrations/004_courses.sql")),
+        ("005_enrollments.sql", include_str!("../database/migrations/005_enrollments.sql")),
+        ("006_payments.sql",    include_str!("../database/migrations/006_payments.sql")),
+    ];
 
-    for entry in entries {
-        let path = entry.path();
-        let sql  = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        client.batch_execute(&sql).map_err(|e| format!("{path:?}: {e}"))?;
+    for (name, sql) in migrations {
+        let already_applied: bool = client
+            .query_one("SELECT EXISTS(SELECT 1 FROM _migrations WHERE filename = $1)", &[name])
+            .map_err(|e| e.to_string())?
+            .get(0);
+
+        if !already_applied {
+            client.batch_execute(sql).map_err(|e| format!("{name}: {e}"))?;
+            client
+                .execute("INSERT INTO _migrations (filename) VALUES ($1)", &[name])
+                .map_err(|e| e.to_string())?;
+            log::info!("applied migration: {name}");
+        }
     }
     Ok(())
 }
