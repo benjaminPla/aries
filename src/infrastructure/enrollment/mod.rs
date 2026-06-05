@@ -26,21 +26,21 @@ fn pg_err(e: postgres::Error) -> EnrollmentRepoError {
 }
 
 fn row_to_enrollment(row: &Row) -> Result<Enrollment, EnrollmentRepoError> {
-    let id:                 Uuid          = row.get("id");
-    let student_id:         Uuid          = row.get("student_id");
-    let course_period_id:   Uuid          = row.get("course_period_id");
-    let period_label:       String        = row.get("period_label");
-    let course_name:        String        = row.get("course_name");
-    let agreed_price_cents: i32           = row.get("agreed_price_cents");
-    let enrolled_at:        DateTime<Utc> = row.get("enrolled_at");
+    let id:           Uuid          = row.get("id");
+    let student_id:   Uuid          = row.get("student_id");
+    let period_id:    Uuid          = row.get("course_period_id");
+    let period_label: String        = row.get("period_label");
+    let course_name:  String        = row.get("course_name");
+    let price_cents:  i32           = row.get("price_cents");
+    let enrolled_at:  DateTime<Utc> = row.get("enrolled_at");
 
-    Ok(Enrollment::reconstitute(id, student_id, course_period_id, period_label, course_name, agreed_price_cents, enrolled_at))
+    Ok(Enrollment::reconstitute(id, student_id, period_id, period_label, course_name, price_cents, enrolled_at))
 }
 
 const SELECT: &str = "
-    SELECT e.id, e.student_id, e.course_period_id, e.agreed_price_cents, e.enrolled_at,
-           cp.label AS period_label,
-           c.name   AS course_name
+    SELECT e.id, e.student_id, e.course_period_id, e.price_cents, e.enrolled_at,
+           TO_CHAR(cp.start_date, 'FMMonth YYYY') AS period_label,
+           c.name AS course_name
     FROM enrollments e
     JOIN course_periods cp ON cp.id = e.course_period_id
     JOIN courses        c  ON c.id  = cp.course_id";
@@ -49,9 +49,14 @@ impl EnrollmentRepo for EnrollmentPgRepo {
     fn create(&self, enrollment: &Enrollment) -> Result<(), EnrollmentRepoError> {
         self.client.lock().unwrap()
             .execute(
-                "INSERT INTO enrollments (id, student_id, course_period_id, agreed_price_cents)
+                "INSERT INTO enrollments (id, student_id, course_period_id, price_cents)
                  VALUES ($1, $2, $3, $4)",
-                &[&enrollment.id(), &enrollment.student_id(), &enrollment.course_period_id(), &enrollment.agreed_price_cents()],
+                &[
+                    &enrollment.id(),
+                    &enrollment.student_id(),
+                    &enrollment.course_period_id(),
+                    &enrollment.agreed_price_cents(),
+                ],
             )
             .map_err(pg_err)?;
         Ok(())

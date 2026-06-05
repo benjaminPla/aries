@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::domain::{
     enrollment::repository::EnrollmentRepo,
-    payment::{repository::PaymentRepo},
+    payment::repository::PaymentRepo,
 };
 
 #[derive(Clone, PartialEq)]
@@ -61,22 +61,25 @@ impl StudentLedgerUseCase {
         }
 
         for p in &payments {
-            if *p.status() == PaymentStatus::Paid {
-                let method = match p.payment_method() {
-                    Some("cash")     => "efectivo",
-                    Some("transfer") => "transferencia",
-                    Some("card")     => "tarjeta",
-                    _                => "efectivo",
-                };
-                raw.push((p.paid_at().unwrap_or(p.created_at()), LedgerEntry {
-                    id:              p.id(),
-                    kind:            LedgerKind::Credit,
-                    description:     format!("Pago ({})", method),
-                    amount_cents:    p.amount_cents(),
-                    running_balance: 0,
-                    date:            p.paid_at().unwrap_or(p.created_at()),
-                }));
-            }
+            let method = match p.payment_method() {
+                "cash"     => "efectivo",
+                "transfer" => "transferencia",
+                "card"     => "tarjeta",
+                "discount" => "descuento",
+                other      => other,
+            };
+            let desc = match p.notes() {
+                Some(n) => format!("Pago ({}) — {}", method, n),
+                None    => format!("Pago ({})", method),
+            };
+            raw.push((p.paid_at(), LedgerEntry {
+                id:              p.id(),
+                kind:            LedgerKind::Credit,
+                description:     desc,
+                amount_cents:    p.amount_cents(),
+                running_balance: 0,
+                date:            p.paid_at(),
+            }));
         }
 
         raw.sort_by_key(|(dt, _)| *dt);

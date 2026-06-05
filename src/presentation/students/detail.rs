@@ -1,11 +1,11 @@
 use std::sync::{Arc, Mutex};
 
+use chrono::{NaiveDate, TimeZone, Utc};
 use eframe::egui;
 use postgres::Client;
 use uuid::Uuid;
 
 use crate::{
-    presentation::fmt_ars,
     application::{
         course::get_all::CourseGetAllUseCase,
         course_period::get_by_course::CoursePeriodGetByCourseUseCase,
@@ -16,14 +16,12 @@ use crate::{
         payment::{
             create::{PaymentCreateInput, PaymentCreateUseCase},
             delete::PaymentDeleteUseCase,
-            get_by_student::PaymentGetByStudentUseCase,
-            mark_paid::PaymentMarkPaidUseCase,
         },
         student_ledger::{LedgerKind, StudentLedgerUseCase},
     },
     presentation::{
-        confirm_delete_modal, date_selector, fmt_dt, push_error, push_success, section_header,
-        Notifications,
+        confirm_delete_modal, date_selector, fmt_ars, fmt_dt, push_error, push_success,
+        section_header, Notifications,
     },
     presentation::table::{self, Column},
 };
@@ -46,14 +44,6 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
             Ok((entries, balance)) => {
                 state.ledger        = entries;
                 state.balance_cents = balance;
-            }
-            Err(e) => push_error(notifs, e.to_string()),
-        }
-        match PaymentGetByStudentUseCase::new(make_payment_repo(client)).execute(student.id) {
-            Ok(payments) => {
-                state.pending_payments = payments.into_iter()
-                    .filter(|p| p.status != crate::domain::payment::PaymentStatus::Paid)
-                    .collect();
             }
             Err(e) => push_error(notifs, e.to_string()),
         }
@@ -94,18 +84,21 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
     });
     ui.add_space(4.0);
 
-    // ── Actions + balance ─────────────────────────────────────────────────────
+    // ── Balance + action buttons ──────────────────────────────────────────────
     ui.horizontal(|ui| {
         let (bal_color, bal_text) = if state.balance_cents >= 0 {
             (crate::theme::colors::SUCCESS, format!("Balance: +{}", fmt_ars(state.balance_cents)))
         } else {
-            (crate::theme::colors::ERROR,   format!("Balance: {}", fmt_ars(state.balance_cents)))
+            (crate::theme::colors::ERROR, format!("Balance: {}", fmt_ars(state.balance_cents)))
         };
         ui.colored_label(bal_color, bal_text);
 
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button("+ Pago").clicked() && !state.show_payment_form {
                 state.payment_amount    = String::new();
+                state.payment_method    = "cash".into();
+                state.payment_paid_at   = today();
+                state.payment_notes     = String::new();
                 state.show_payment_form = true;
                 state.show_enroll_form  = false;
             }
@@ -174,10 +167,9 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                     }
                 });
 
-            // Show price for selected course
             if let Some(price) = state.enroll_sel_course
                 .and_then(|id| state.enroll_courses.iter().find(|c| c.id == id))
-                .map(|c| c.price_cents)
+                .map(|c| c.month_price_cents)
             {
                 ui.colored_label(crate::theme::colors::TEXT_MUTED, fmt_ars(price));
             }
@@ -224,10 +216,22 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
     if state.show_payment_form {
         ui.horizontal(|ui| {
             ui.label("Monto");
-            ui.add(egui::TextEdit::singleline(&mut state.payment_amount).desired_width(70.0));
+            ui.add(egui::TextEdit::singleline(&mut state.payment_amount).desired_width(80.0));
+
+            ui.label("Método");
+            egui::ComboBox::from_id_salt("pay_method")
+                .selected_text(method_label(&state.payment_method))
+                .show_ui(ui, |ui| {
+                    for (val, label) in PAYMENT_METHODS {
+                        ui.selectable_value(&mut state.payment_method, val.to_string(), *label);
+                    }
+                });
 
             ui.label("Fecha");
-            date_selector(ui, "pay_date", &mut state.payment_due_date);
+            date_selector(ui, "pay_date", &mut state.payment_paid_at);
+
+            ui.label("Notas");
+            ui.add(egui::TextEdit::singleline(&mut state.payment_notes).desired_width(120.0));
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.button("Cancelar").clicked() {
@@ -239,8 +243,16 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                         Some(v) => v,
                         None    => { push_error(notifs, "Monto inválido"); return; }
                     };
+                    let paid_at = naive_date_to_utc(state.payment_paid_at);
+                    let notes   = if state.payment_notes.trim().is_empty() { None } else { Some(state.payment_notes.trim().to_owned()) };
                     match PaymentCreateUseCase::new(make_payment_repo(client))
-                        .execute(PaymentCreateInput { student_id: student.id, amount_cents, due_date: state.payment_due_date, notes: None }) {
+                        .execute(PaymentCreateInput {
+                            student_id:     student.id,
+                            amount_cents,
+                            payment_method: state.payment_method.clone(),
+                            paid_at,
+                            notes,
+                        }) {
                         Ok(_) => {
                             push_success(notifs, "Pago registrado");
                             state.show_payment_form   = false;
@@ -255,7 +267,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
         ui.separator();
     }
 
-    // ── Ledger table ──────────────────────────────────────────────────────────
+    // ── Ledger ────────────────────────────────────────────────────────────────
     let mut action: Option<(LedgerAction, Uuid)> = None;
 
     table::builder(ui)
@@ -263,13 +275,13 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
         .column(Column::remainder().at_least(150.0))
         .column(Column::exact(80.0))
         .column(Column::exact(90.0))
-        .column(Column::auto().at_least(60.0))
+        .column(Column::auto().at_least(40.0))
         .header(table::header_height(), |mut h| {
             h.col(|ui| table::head(ui, "Fecha"));
             h.col(|ui| table::head(ui, "Descripción"));
             h.col(|ui| table::head(ui, "Monto"));
             h.col(|ui| table::head(ui, "Balance"));
-            h.col(|ui| table::head(ui, "Acciones"));
+            h.col(|ui| table::head(ui, ""));
         })
         .body(|mut body| {
             for entry in &state.ledger {
@@ -294,52 +306,29 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                         } else {
                             crate::theme::colors::SUCCESS
                         };
-                        let sign = if entry.running_balance < 0 { "-" } else { "+" };
-                        ui.colored_label(color, format!("{sign}{}", fmt_ars(entry.running_balance.abs())));
+                        let sign = if entry.running_balance < 0 { "" } else { "+" };
+                        ui.colored_label(color, format!("{sign}{}", fmt_ars(entry.running_balance)));
                     });
                     row.col(|ui| {
-                        // Debt entries: mark paid or delete enrollment
-                        // Credit entries: delete payment
-                        match entry.kind {
-                            LedgerKind::Debt => {
-                                if ui.small_button("🗑").clicked() {
-                                    action = Some((LedgerAction::DeleteEnrollment, entry.id));
-                                }
-                            }
-                            LedgerKind::Credit => {
-                                if ui.small_button("🗑").clicked() {
-                                    action = Some((LedgerAction::DeletePayment, entry.id));
-                                }
-                            }
+                        if ui.small_button("🗑").clicked() {
+                            action = Some((
+                                match entry.kind {
+                                    LedgerKind::Debt   => LedgerAction::DeleteEnrollment,
+                                    LedgerKind::Credit => LedgerAction::DeletePayment,
+                                },
+                                entry.id,
+                            ));
                         }
                     });
                 });
             }
         });
 
-    // Pending payments (shown below ledger, not counted in balance)
-    let pending = {
-        let enrollment_repo = make_enrollment_repo(client);
-        let payment_repo    = make_payment_repo(client);
-        // quick inline: get pending payments
-        let _ = (enrollment_repo, payment_repo); // repos available if needed
-        Vec::<(String, i32)>::new() // placeholder — pending payments shown via mark_paid action
-    };
-    let _ = pending;
-
-    // Mark-paid shortcuts: show pending payments separately
-    show_pending_payments(ui, client, state, notifs);
-
-    if let Some((act, id)) = action {
-        match act {
-            LedgerAction::DeleteEnrollment => { state.confirm_delete = Some(id); }
-            LedgerAction::DeletePayment    => { state.confirm_delete = Some(id); }
-        }
+    if let Some((_, id)) = action {
         state.confirm_delete = Some(id);
     }
 
     if let Some(id) = confirm_delete_modal(ui.ctx(), &mut state.confirm_delete) {
-        // Try delete as enrollment first, then as payment
         let del_enroll = EnrollmentDeleteUseCase::new(make_enrollment_repo(client)).execute(id);
         if del_enroll.is_ok() {
             push_success(notifs, "Inscripción eliminada");
@@ -355,39 +344,28 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
 
 enum LedgerAction { DeleteEnrollment, DeletePayment }
 
-fn show_pending_payments(
-    ui: &mut egui::Ui,
-    client: &Arc<Mutex<Client>>,
-    state: &mut StudentsState,
-    notifs: &mut Notifications,
-) {
-    use crate::domain::payment::PaymentStatus;
+const PAYMENT_METHODS: &[(&str, &str)] = &[
+    ("cash",     "Efectivo"),
+    ("transfer", "Transferencia"),
+    ("card",     "Tarjeta"),
+    ("discount", "Descuento"),
+];
 
-    if state.pending_payments.is_empty() { return; }
+fn method_label(method: &str) -> &str {
+    PAYMENT_METHODS.iter()
+        .find(|(val, _)| *val == method)
+        .map(|(_, label)| *label)
+        .unwrap_or("Efectivo")
+}
 
-    ui.add_space(4.0);
-    section_header(ui, "Pagos pendientes");
-    let mut mark_id: Option<Uuid> = None;
-    for p in &state.pending_payments {
-        ui.horizontal(|ui| {
-            let status_color = if p.status == PaymentStatus::Overdue {
-                crate::theme::colors::ERROR
-            } else {
-                crate::theme::colors::WARNING
-            };
-            ui.colored_label(status_color, p.status.label());
-            ui.label(format!("{} — vence {}", fmt_ars(p.amount_cents), p.due_date.format("%d/%m/%Y")));
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.small_button("✓ Marcar pagado").clicked() { mark_id = Some(p.id); }
-            });
-        });
-    }
-    if let Some(id) = mark_id {
-        match PaymentMarkPaidUseCase::new(make_payment_repo(client)).execute(id) {
-            Ok(_)  => { push_success(notifs, "Pago marcado como pagado"); state.needs_reload_ledger = true; }
-            Err(e) => push_error(notifs, e.to_string()),
-        }
-    }
+fn today() -> NaiveDate {
+    use chrono::{Datelike, Local};
+    let n = Local::now();
+    NaiveDate::from_ymd_opt(n.year(), n.month(), n.day()).unwrap()
+}
+
+fn naive_date_to_utc(date: NaiveDate) -> chrono::DateTime<Utc> {
+    Utc.from_utc_datetime(&date.and_hms_opt(12, 0, 0).unwrap())
 }
 
 fn parse_cents(s: &str) -> Option<i32> {

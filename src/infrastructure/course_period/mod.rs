@@ -28,15 +28,14 @@ fn pg_err(e: postgres::Error) -> CoursePeriodRepoError {
 fn row_to_period(row: &Row) -> Result<CoursePeriod, CoursePeriodRepoError> {
     let id:         Uuid      = row.get("id");
     let course_id:  Uuid      = row.get("course_id");
-    let label:      String    = row.get("label");
     let start_date: NaiveDate = row.get("start_date");
     let end_date:   NaiveDate = row.get("end_date");
     let enrolled:   i64       = row.get("enrolled");
-    Ok(CoursePeriod::reconstitute(id, course_id, label, start_date, end_date, enrolled))
+    Ok(CoursePeriod::reconstitute(id, course_id, start_date, end_date, enrolled))
 }
 
 const SELECT: &str = "
-    SELECT cp.id, cp.course_id, cp.label, cp.start_date, cp.end_date,
+    SELECT cp.id, cp.course_id, cp.start_date, cp.end_date,
            COALESCE(ec.enrolled, 0) AS enrolled
     FROM course_periods cp
     LEFT JOIN (
@@ -50,9 +49,9 @@ impl CoursePeriodRepo for CoursePeriodPgRepo {
     fn create(&self, period: &CoursePeriod) -> Result<(), CoursePeriodRepoError> {
         self.client.lock().unwrap()
             .execute(
-                "INSERT INTO course_periods (id, course_id, label, start_date, end_date)
-                 VALUES ($1, $2, $3, $4, $5)",
-                &[&period.id(), &period.course_id(), &period.label(), &period.start_date(), &period.end_date()],
+                "INSERT INTO course_periods (id, course_id, start_date, end_date)
+                 VALUES ($1, $2, $3, $4)",
+                &[&period.id(), &period.course_id(), &period.start_date(), &period.end_date()],
             )
             .map_err(pg_err)?;
         Ok(())

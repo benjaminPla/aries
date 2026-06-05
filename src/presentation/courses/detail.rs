@@ -81,7 +81,6 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
                 if ui.button("Guardar").clicked() {
                     let y = state.period_year;
                     let m = state.period_month;
-                    let label      = format!("{} {}", MONTHS[(m - 1) as usize], y);
                     let start_date = NaiveDate::from_ymd_opt(y, m, 1).unwrap();
                     let end_date   = if m == 12 {
                         NaiveDate::from_ymd_opt(y + 1, 1, 1).unwrap() - Duration::days(1)
@@ -89,7 +88,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut CoursesS
                         NaiveDate::from_ymd_opt(y, m + 1, 1).unwrap() - Duration::days(1)
                     };
                     match CoursePeriodCreateUseCase::new(make_course_period_repo(client))
-                        .execute(CoursePeriodCreateInput { course_id: course.id, label, start_date, end_date }) {
+                        .execute(CoursePeriodCreateInput { course_id: course.id, start_date, end_date }) {
                         Ok(_) => {
                             push_success(notifs, "Período creado");
                             state.show_period_form     = false;

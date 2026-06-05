@@ -13,13 +13,10 @@ use crate::{
     application::{
         course::dto::CourseDto,
         course_period::dto::CoursePeriodDto,
-        payment::dto::PaymentDto,
         student::{dto::StudentDto, get_all::StudentGetAllUseCase},
         student_ledger::LedgerEntry,
     },
-    domain::{
-        student::{repository::StudentRepo, AgeGroup},
-    },
+    domain::student::{repository::StudentRepo, AgeGroup},
     infrastructure::{
         course::CoursePgRepo,
         course_period::CoursePeriodPgRepo,
@@ -33,8 +30,8 @@ use crate::{
 pub enum Mode { #[default] List, Create, Edit, Detail }
 
 pub struct StudentsState {
-    pub mode:         Mode,
-    pub students:     Vec<StudentDto>,
+    pub mode:              Mode,
+    pub students:          Vec<StudentDto>,
     pub needs_reload:      bool,
     pub filter_first_name: String,
     pub filter_last_name:  String,
@@ -54,7 +51,6 @@ pub struct StudentsState {
     // detail
     pub selected_student:    Option<StudentDto>,
     pub ledger:              Vec<LedgerEntry>,
-    pub pending_payments:    Vec<PaymentDto>,
     pub balance_cents:       i32,
     pub needs_reload_ledger: bool,
 
@@ -68,9 +64,11 @@ pub struct StudentsState {
     pub enroll_period_filter: String,
 
     // payment form
-    pub show_payment_form: bool,
-    pub payment_amount:    String,
-    pub payment_due_date:  NaiveDate,
+    pub show_payment_form:   bool,
+    pub payment_amount:      String,
+    pub payment_method:      String,
+    pub payment_paid_at:     NaiveDate,
+    pub payment_notes:       String,
 
     pub confirm_delete: Option<Uuid>,
 }
@@ -83,26 +81,25 @@ fn today() -> NaiveDate {
 impl Default for StudentsState {
     fn default() -> Self {
         Self {
-            mode:                   Mode::List,
-            students:               Vec::new(),
-            needs_reload:           true,
-            filter_first_name:      String::new(),
-            filter_last_name:       String::new(),
-            filter_email:           String::new(),
-            editing_id:             None,
-            age_group:              AgeGroup::Adult,
-            first_name:             String::new(),
-            last_name:              String::new(),
-            email:                  String::new(),
-            phone:                  String::new(),
-            notes:                  String::new(),
-            created_at:             String::new(),
-            updated_at:             String::new(),
-            selected_student:       None,
-            ledger:                 Vec::new(),
-            pending_payments:       Vec::new(),
-            balance_cents:          0,
-            needs_reload_ledger:    false,
+            mode:              Mode::List,
+            students:          Vec::new(),
+            needs_reload:      true,
+            filter_first_name: String::new(),
+            filter_last_name:  String::new(),
+            filter_email:      String::new(),
+            editing_id:        None,
+            age_group:         AgeGroup::Adult,
+            first_name:        String::new(),
+            last_name:         String::new(),
+            email:             String::new(),
+            phone:             String::new(),
+            notes:             String::new(),
+            created_at:        String::new(),
+            updated_at:        String::new(),
+            selected_student:    None,
+            ledger:              Vec::new(),
+            balance_cents:       0,
+            needs_reload_ledger: false,
             show_enroll_form:     false,
             enroll_courses:       Vec::new(),
             enroll_sel_course:    None,
@@ -112,8 +109,10 @@ impl Default for StudentsState {
             enroll_period_filter: String::new(),
             show_payment_form: false,
             payment_amount:    String::new(),
-            payment_due_date:  today(),
-            confirm_delete:         None,
+            payment_method:    "cash".into(),
+            payment_paid_at:   today(),
+            payment_notes:     String::new(),
+            confirm_delete:    None,
         }
     }
 }
@@ -134,7 +133,6 @@ pub fn make_course_period_repo(client: &Arc<Mutex<Client>>) -> Arc<CoursePeriodP
 pub fn clear_detail_state(state: &mut StudentsState) {
     state.selected_student    = None;
     state.ledger              = Vec::new();
-    state.pending_payments    = Vec::new();
     state.balance_cents       = 0;
     state.needs_reload_ledger = false;
     state.show_enroll_form     = false;
@@ -146,8 +144,10 @@ pub fn clear_detail_state(state: &mut StudentsState) {
     state.enroll_period_filter = String::new();
     state.show_payment_form = false;
     state.payment_amount    = String::new();
-    state.payment_due_date  = today();
-    state.confirm_delete         = None;
+    state.payment_method    = "cash".into();
+    state.payment_paid_at   = today();
+    state.payment_notes     = String::new();
+    state.confirm_delete    = None;
 }
 
 pub fn clear_form(state: &mut StudentsState) {

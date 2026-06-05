@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS courses (
     class_price_cents INTEGER      NOT NULL,
     created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     id                UUID         PRIMARY KEY  DEFAULT gen_random_uuid(),
-    month_price_cents       INTEGER      NOT NULL,
+    month_price_cents INTEGER      NOT NULL,
     name              VARCHAR(100) NOT NULL,
     notes             VARCHAR(500),
     teacher_id        UUID         NOT NULL REFERENCES teachers(id),

@@ -10,7 +10,6 @@ use crate::{
 
 pub struct CoursePeriodCreateInput {
     pub course_id:  Uuid,
-    pub label:      String,
     pub start_date: NaiveDate,
     pub end_date:   NaiveDate,
 }
@@ -23,13 +22,10 @@ impl CoursePeriodCreateUseCase {
     pub fn new(repo: Arc<dyn CoursePeriodRepo>) -> Self { Self { repo } }
 
     pub fn execute(&self, input: CoursePeriodCreateInput) -> Result<(), CoursePeriodAppError> {
-        if input.label.trim().is_empty() {
-            return Err(CoursePeriodAppError::Validation("etiqueta requerida".into()));
-        }
         if input.end_date <= input.start_date {
             return Err(CoursePeriodAppError::Validation("la fecha de fin debe ser posterior a la de inicio".into()));
         }
-        let period = CoursePeriod::new(input.course_id, input.label, input.start_date, input.end_date);
+        let period = CoursePeriod::new(input.course_id, input.start_date, input.end_date);
         self.repo.create(&period)?;
         log::info!("[course_period] created: id={} course={}", period.id(), input.course_id);
         Ok(())

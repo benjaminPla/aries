@@ -1,18 +1,18 @@
 CREATE TABLE IF NOT EXISTS enrollments (
-    price_cents      INTEGER       NOT NULL,
     course_period_id UUID          NOT NULL REFERENCES course_periods(id) ON DELETE CASCADE,
     dropped_at       TIMESTAMPTZ,
     enrolled_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     id               UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
     notes            VARCHAR(500),
+    price_cents      INTEGER       NOT NULL,
     student_id       UUID          NOT NULL REFERENCES students(id),
     updated_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
 
     CONSTRAINT enrollments_unique
         UNIQUE (student_id, course_period_id),
 
-    CONSTRAINT enrollments_agreed_price_positive
-        CHECK (agreed_price_cents > 0)
+    CONSTRAINT enrollments_price_positive
+        CHECK (price_cents > 0)
 );
 
 DROP TRIGGER IF EXISTS enrollments_set_updated_at ON enrollments;

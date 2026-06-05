@@ -1,12 +1,12 @@
 use std::sync::{Arc, Mutex};
 
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use postgres::{Client, Row};
 use uuid::Uuid;
 
 use crate::domain::payment::{
     repository::{PaymentRepo, PaymentRepoError},
-    value_objects::payment_status::PaymentStatus,
+    value_objects::payment_method::PaymentMethod,
     Payment,
 };
 
@@ -27,36 +27,40 @@ fn pg_err(e: postgres::Error) -> PaymentRepoError {
 }
 
 fn row_to_payment(row: &Row) -> Result<Payment, PaymentRepoError> {
-    let id:             Uuid                  = row.get("id");
-    let student_id:     Uuid                  = row.get("student_id");
-    let amount_cents:   i32                   = row.get("amount_cents");
-    let due_date:       NaiveDate             = row.get("due_date");
-    let paid_at:        Option<DateTime<Utc>> = row.get("paid_at");
-    let payment_method: Option<String>        = row.get("payment_method_text");
-    let status:         String                = row.get("status_text");
-    let notes:          Option<String>        = row.get("notes");
-    let created_at:     DateTime<Utc>         = row.get("created_at");
+    let id:             Uuid          = row.get("id");
+    let student_id:     Uuid          = row.get("student_id");
+    let amount_cents:   i32           = row.get("amount_cents");
+    let method_text:    String        = row.get("payment_method_text");
+    let paid_at:        DateTime<Utc> = row.get("paid_at");
+    let notes:          Option<String> = row.get("notes");
+    let created_at:     DateTime<Utc> = row.get("created_at");
 
-    let status = PaymentStatus::from_db_str(&status)
-        .ok_or_else(|| PaymentRepoError::Database(format!("unknown payment status: {status}")))?;
+    let payment_method = PaymentMethod::new(&method_text)
+        .map_err(|_| PaymentRepoError::Database(format!("unknown payment method: {method_text}")))?;
 
-    Ok(Payment::reconstitute(id, student_id, amount_cents, due_date, paid_at, payment_method, status, notes, created_at))
+    Ok(Payment::reconstitute(amount_cents, created_at, id, notes, paid_at, payment_method, student_id))
 }
 
 const SELECT: &str = "
-    SELECT p.id, p.student_id, p.amount_cents, p.due_date, p.paid_at,
-           p.status::text         AS status_text,
+    SELECT p.id, p.student_id, p.amount_cents,
            p.payment_method::text AS payment_method_text,
-           p.notes, p.created_at
+           p.paid_at, p.notes, p.created_at
     FROM payments p";
 
 impl PaymentRepo for PaymentPgRepo {
     fn create(&self, payment: &Payment) -> Result<(), PaymentRepoError> {
         self.client.lock().unwrap()
             .execute(
-                "INSERT INTO payments (id, student_id, amount_cents, due_date, notes)
-                 VALUES ($1, $2, $3, $4, $5)",
-                &[&payment.id(), &payment.student_id(), &payment.amount_cents(), &payment.due_date(), &payment.notes()],
+                "INSERT INTO payments (id, student_id, amount_cents, payment_method, paid_at, notes)
+                 VALUES ($1, $2, $3, $4::payment_method, $5, $6)",
+                &[
+                    &payment.id(),
+                    &payment.student_id(),
+                    &payment.amount_cents(),
+                    &payment.payment_method(),
+                    &payment.paid_at(),
+                    &payment.notes(),
+                ],
             )
             .map_err(pg_err)?;
         Ok(())
@@ -71,19 +75,10 @@ impl PaymentRepo for PaymentPgRepo {
     }
 
     fn get_by_student(&self, student_id: Uuid) -> Result<Vec<Payment>, PaymentRepoError> {
-        let query = format!("{SELECT} WHERE p.student_id = $1 ORDER BY p.created_at ASC");
-        let rows = self.client.lock().unwrap().query(&query, &[&student_id]).map_err(pg_err)?;
-        rows.iter().map(row_to_payment).collect()
-    }
-
-    fn mark_paid(&self, id: Uuid) -> Result<(), PaymentRepoError> {
-        let n = self.client.lock().unwrap()
-            .execute(
-                "UPDATE payments SET status = 'paid', paid_at = NOW() WHERE id = $1",
-                &[&id],
-            )
+        let query = format!("{SELECT} WHERE p.student_id = $1 ORDER BY p.paid_at ASC");
+        let rows = self.client.lock().unwrap()
+            .query(&query, &[&student_id])
             .map_err(pg_err)?;
-        if n == 0 { return Err(PaymentRepoError::NotFound(id)); }
-        Ok(())
+        rows.iter().map(row_to_payment).collect()
     }
 }

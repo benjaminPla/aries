@@ -37,7 +37,9 @@ impl EnrollmentCreateUseCase {
         let course = self.course_repo.get_by_id(period.course_id())
             .map_err(|_| EnrollmentAppError::NotFound)?;
 
-        let enrollment = Enrollment::new(input.student_id, input.course_period_id, course.price_cents());
+        let price_cents = course.month_price_cents().value();
+        let enrollment = Enrollment::new(input.student_id, input.course_period_id, price_cents);
+
         self.enrollment_repo.create(&enrollment).map_err(|e| {
             if let EnrollmentRepoError::Database(ref msg) = e {
                 if msg.contains("age_group") { return EnrollmentAppError::AgeGroupMismatch; }
@@ -45,8 +47,9 @@ impl EnrollmentCreateUseCase {
             }
             e.into()
         })?;
+
         log::info!("[enrollment] created: id={} student={} period={} price={}",
-            enrollment.id(), input.student_id, input.course_period_id, course.price_cents());
+            enrollment.id(), input.student_id, input.course_period_id, price_cents);
         Ok(())
     }
 }

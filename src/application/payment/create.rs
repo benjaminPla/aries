@@ -1,18 +1,23 @@
 use std::sync::Arc;
 
-use chrono::NaiveDate;
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::{
     application::payment::errors::PaymentAppError,
-    domain::payment::{repository::PaymentRepo, Payment},
+    domain::payment::{
+        repository::PaymentRepo,
+        value_objects::payment_method::PaymentMethod,
+        Payment,
+    },
 };
 
 pub struct PaymentCreateInput {
-    pub student_id:   Uuid,
-    pub amount_cents: i32,
-    pub due_date:     NaiveDate,
-    pub notes:        Option<String>,
+    pub student_id:     Uuid,
+    pub amount_cents:   i32,
+    pub payment_method: String,
+    pub paid_at:        DateTime<Utc>,
+    pub notes:          Option<String>,
 }
 
 pub struct PaymentCreateUseCase {
@@ -26,9 +31,12 @@ impl PaymentCreateUseCase {
         if input.amount_cents <= 0 {
             return Err(PaymentAppError::Validation("el monto debe ser mayor a 0".into()));
         }
-        let payment = Payment::new(input.student_id, input.amount_cents, input.due_date, input.notes);
+        let method = PaymentMethod::new(&input.payment_method)
+            .map_err(|e| PaymentAppError::Validation(e.to_string()))?;
+        let payment = Payment::new(input.amount_cents, input.notes, input.paid_at, method, input.student_id);
         self.payment_repo.create(&payment)?;
-        log::info!("[payment] created: id={} student={} due={}", payment.id(), input.student_id, input.due_date);
+        log::info!("[payment] created: id={} student={} method={} paid_at={}",
+            payment.id(), input.student_id, input.payment_method, input.paid_at);
         Ok(())
     }
 }

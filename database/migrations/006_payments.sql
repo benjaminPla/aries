@@ -1,4 +1,4 @@
-CREATE TYPE payment_method AS ENUM ('cash', 'transfer', 'card');
+CREATE TYPE payment_method AS ENUM ('cash', 'transfer', 'card', 'discount');
 
 CREATE TABLE IF NOT EXISTS payments (
     amount_cents    INTEGER        NOT NULL,
@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS payments (
     student_id      UUID           NOT NULL REFERENCES students(id),
 
     CONSTRAINT payments_amount_positive
-        CHECK (amount_cents > 0),
+        CHECK (amount_cents > 0)
 );
