@@ -52,7 +52,7 @@ impl PaymentRepo for PaymentPgRepo {
         self.client.lock().unwrap()
             .execute(
                 "INSERT INTO payments (id, student_id, amount_cents, payment_method, paid_at, notes)
-                 VALUES ($1, $2, $3, $4::payment_method, $5, $6)",
+                 VALUES ($1, $2, $3, $4::text::payment_method, $5, $6)",
                 &[
                     &payment.id(),
                     &payment.student_id(),

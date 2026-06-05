@@ -1,6 +1,7 @@
 # todo
 
-- [ ] check ~/notes.md -> copy teaits vs & -> apply
+- [ ] fix filters growing horizontally
+- [x] check ~/notes.md -> copy teaits vs & -> apply
 - [x] alpabetically order teachers courses and students get_all views
 - [x] fix shitty notification, it's growing horixoanlly with a shitty slow aniation and the x (close) it's not visible, it must apear and disapear and thats all. if the ui is complex just size it on the main panel or shomething not complex. it must be a global vec one0
 - [x] "Guardar" and "cancelar" buttons on horixontal forms must be right positioned
@@ -18,7 +19,3 @@
 - [x] check delete cascade and delete confirmation
 - [x] do not use UTC, use argentina timezone
 - [x] check teachers.update_at (it was missing the trigger on sql)
-
-## notes
-
-- when creating an enrollement can I jsut simply select the course.period_id and select "full_course" or "class"?
