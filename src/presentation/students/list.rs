@@ -20,9 +20,6 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn StudentRepo>, state: &mut Students
                 clear_form(state);
                 state.mode = Mode::Create;
             }
-            if ui.button("Actualizar").clicked() {
-                state.needs_reload = true;
-            }
         });
     });
     ui.separator();

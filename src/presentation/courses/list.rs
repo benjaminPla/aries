@@ -27,9 +27,6 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, client: &Arc<Mutex<Cl
                 }
                 state.mode = Mode::CreateCourse;
             }
-            if ui.button("Actualizar").clicked() {
-                state.needs_reload = true;
-            }
         });
     });
     ui.separator();
