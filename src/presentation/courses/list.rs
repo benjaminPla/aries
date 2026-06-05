@@ -88,8 +88,8 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, client: &Arc<Mutex<Cl
                     state.teacher_id   = Some(c.teacher_id);
                     state.age_group    = c.age_group;
                     state.capacity     = c.capacity.to_string();
-                    state.price        = format_price(c.month_price_cents);
-                    state.class_price  = format_price(c.class_price_cents);
+                    state.price        = (c.month_price_cents as f64 / 100.0).to_string();
+                    state.class_price  = (c.class_price_cents  as f64 / 100.0).to_string();
                     state.course_notes = c.notes.clone().unwrap_or_default();
                     state.created_at   = fmt_dt(c.created_at);
                     state.updated_at   = fmt_dt(c.updated_at);
