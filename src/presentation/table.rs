@@ -33,6 +33,7 @@ pub fn head_filter(ui: &mut egui::Ui, placeholder: &str, filter: &mut String) {
         }
         ui.add(
             egui::TextEdit::singleline(filter)
+                .id(egui::Id::new(("head_filter", placeholder)))
                 .hint_text(hint)
                 .desired_width(f32::INFINITY)
                 .font(egui::FontId::proportional(sizes::HEAD_FONT)),
