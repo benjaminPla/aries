@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
 use eframe::egui;
+use egui_extras::{Column, TableBuilder};
 use uuid::Uuid;
 
 use crate::application::teacher::delete::TeacherDeleteUseCase;
 use crate::domain::teacher::repository::TeacherRepo;
 use crate::presentation::{confirm_delete_modal, fmt_dt, push_error, push_success, Notifications};
-use crate::presentation::table::{self, Column};
+use crate::theme::sizes;
 
-use super::{Mode, TeachersState, clear_form};
+use super::{clear_form, Mode, TeachersState};
 
 enum Action { View, Edit, Delete }
 
@@ -39,30 +40,32 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn TeacherRepo>, state: &mut Teachers
 
     let mut action: Option<(Action, Uuid)> = None;
 
-    table::builder(ui)
+    TableBuilder::new(ui)
+        .striped(true)
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .column(Column::remainder())
+        .column(Column::remainder())
+        .column(Column::remainder())
         .column(Column::remainder())
         .column(Column::auto())
-        .column(Column::auto())
-        .column(Column::auto())
-        .column(Column::auto())
-        .header(table::header_height(), |mut h| {
-            h.col(|ui| table::head_filter(ui, "Nombre",   &mut state.filter_first_name));
-            h.col(|ui| table::head_filter(ui, "Apellido", &mut state.filter_last_name));
-            h.col(|ui| table::head_filter(ui, "Email",    &mut state.filter_email));
-            h.col(|ui| table::head(ui, "Teléfono"));
-            h.col(|ui| table::head(ui, "Acciones"));
+        .header(sizes::TABLE_ROW_HEIGHT_NORMAL, |mut header| {
+            header.col(|ui| { ui.label("Nombre"); });
+            header.col(|ui| { ui.label("Apellido"); });
+            header.col(|ui| { ui.label("Email"); });
+            header.col(|ui| { ui.label("Teléfono"); });
+            header.col(|ui| { ui.label("Acciones"); });
         })
         .body(|mut body| {
             for t in &visible {
-                body.row(table::row_height(), |mut row| {
+                body.row(sizes::TABLE_ROW_HEIGHT_NORMAL, |mut row| {
                     row.col(|ui| { ui.label(&t.first_name); });
                     row.col(|ui| { ui.label(&t.last_name); });
                     row.col(|ui| { ui.label(&t.email); });
                     row.col(|ui| { ui.label(&t.phone); });
                     row.col(|ui| {
-                        if ui.small_button("Ver").clicked()      { action = Some((Action::View,   t.id)); }
-                        if ui.small_button("Editar").clicked()   { action = Some((Action::Edit,   t.id)); }
-                        if ui.small_button("Eliminar").clicked() { action = Some((Action::Delete, t.id)); }
+                        if ui.small_button(egui_phosphor::regular::EYE).clicked()           { action = Some((Action::View,   t.id)); }
+                        if ui.small_button(egui_phosphor::regular::PENCIL_SIMPLE).clicked() { action = Some((Action::Edit,   t.id)); }
+                        if ui.small_button(egui_phosphor::regular::TRASH).clicked()         { action = Some((Action::Delete, t.id)); }
                     });
                 });
             }
@@ -72,7 +75,7 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn TeacherRepo>, state: &mut Teachers
         match act {
             Action::View => {
                 state.viewing_id = Some(id);
-                state.mode       = Mode::View;
+                state.mode       = Mode::Detail;
             }
             Action::Edit => {
                 if let Some(t) = state.teachers.iter().find(|t| t.id == id) {

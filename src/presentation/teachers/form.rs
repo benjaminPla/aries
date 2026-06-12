@@ -55,7 +55,7 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn TeacherRepo>, state: &mut Teachers
                 notes,
                 phone:      state.phone.clone(),
             }),
-            Mode::List | Mode::View => unreachable!(),
+            Mode::List | Mode::Detail => unreachable!(),
         };
 
         match result {

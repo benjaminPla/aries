@@ -12,34 +12,14 @@ pub fn builder(ui: &mut egui::Ui) -> TableBuilder<'_> {
 }
 
 pub fn head(ui: &mut egui::Ui, label: &str) {
-    ui.painter().rect_filled(ui.max_rect(), egui::CornerRadius::ZERO, colors::HEADER_BG);
+    ui.painter().rect_filled(ui.max_rect(), egui::CornerRadius::ZERO, colors::BLACK);
     ui.label(
         egui::RichText::new(label)
-            .size(sizes::HEAD_FONT)
-            .color(colors::TEXT_SECONDARY)
+            .size(sizes::FONT_SIZE_NORMAL)
+            .color(colors::LIGHT_GRAY)
             .strong(),
     );
 }
 
-pub fn head_filter(ui: &mut egui::Ui, placeholder: &str, filter: &mut String) {
-    ui.painter().rect_filled(ui.max_rect(), egui::CornerRadius::ZERO, colors::HEADER_BG);
-    let hint = egui::RichText::new(placeholder)
-        .size(sizes::HEAD_FONT)
-        .color(colors::TEXT_SECONDARY)
-        .strong();
-    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-        if !filter.is_empty() {
-            if ui.small_button("×").clicked() { filter.clear(); }
-        }
-        ui.add(
-            egui::TextEdit::singleline(filter)
-                .id(egui::Id::new(("head_filter", placeholder)))
-                .hint_text(hint)
-                .desired_width(f32::INFINITY)
-                .font(egui::FontId::proportional(sizes::HEAD_FONT)),
-        );
-    });
-}
-
-pub fn row_height()    -> f32 { sizes::ROW_HEIGHT }
-pub fn header_height() -> f32 { sizes::HEADER_HEIGHT }
+pub fn row_height()    -> f32 { sizes::TABLE_ROW_HEIGHT_NORMAL }
+pub fn header_height() -> f32 { sizes::TABLE_ROW_HEIGHT_NORMAL }

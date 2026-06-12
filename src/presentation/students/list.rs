@@ -3,10 +3,11 @@ use std::sync::Arc;
 use eframe::egui;
 use uuid::Uuid;
 
+use egui_extras::{Column, TableBuilder};
+
 use crate::application::student::delete::StudentDeleteUseCase;
 use crate::domain::student::repository::StudentRepo;
 use crate::presentation::{confirm_delete_modal, fmt_dt, push_error, push_success, Notifications};
-use crate::presentation::table::{self, Column};
 
 use super::{Mode, StudentsState, clear_form};
 
@@ -39,33 +40,35 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn StudentRepo>, state: &mut Students
         .cloned()
         .collect();
 
-    table::builder(ui)
+    TableBuilder::new(ui)
+        .striped(true)
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .column(Column::remainder())
+        .column(Column::remainder())
+        .column(Column::remainder())
+        .column(Column::remainder())
         .column(Column::remainder())
         .column(Column::auto())
-        .column(Column::auto())
-        .column(Column::auto())
-        .column(Column::auto())
-        .column(Column::auto())
-        .header(table::header_height(), |mut h| {
-            h.col(|ui| table::head_filter(ui, "Nombre",   &mut state.filter_first_name));
-            h.col(|ui| table::head_filter(ui, "Apellido", &mut state.filter_last_name));
-            h.col(|ui| table::head_filter(ui, "Email",    &mut state.filter_email));
-            h.col(|ui| table::head(ui, "Teléfono"));
-            h.col(|ui| table::head(ui, "Tipo"));
-            h.col(|ui| table::head(ui, "Acciones"));
+        .header(20.0, |mut h| {
+            h.col(|ui| { ui.label("Nombre"); });
+            h.col(|ui| { ui.label("Apellido"); });
+            h.col(|ui| { ui.label("Email"); });
+            h.col(|ui| { ui.label("Teléfono"); });
+            h.col(|ui| { ui.label("Tipo"); });
+            h.col(|ui| { ui.label("Acciones"); });
         })
         .body(|mut body| {
             for s in &visible {
-                body.row(table::row_height(), |mut row| {
+                body.row(18.0, |mut row| {
                     row.col(|ui| { ui.label(&s.first_name); });
                     row.col(|ui| { ui.label(&s.last_name); });
                     row.col(|ui| { ui.label(&s.email); });
                     row.col(|ui| { ui.label(&s.phone); });
                     row.col(|ui| { ui.label(s.age_group.label()); });
                     row.col(|ui| {
-                        if ui.small_button("Ver").clicked()      { action = Some((Action::Open,   s.id)); }
-                        if ui.small_button("Editar").clicked()   { action = Some((Action::Edit,   s.id)); }
-                        if ui.small_button("Eliminar").clicked() { action = Some((Action::Delete, s.id)); }
+                        if ui.small_button(egui_phosphor::regular::EYE).clicked()           { action = Some((Action::Open,   s.id)); }
+                        if ui.small_button(egui_phosphor::regular::PENCIL_SIMPLE).clicked() { action = Some((Action::Edit,   s.id)); }
+                        if ui.small_button(egui_phosphor::regular::TRASH).clicked()         { action = Some((Action::Delete, s.id)); }
                     });
                 });
             }

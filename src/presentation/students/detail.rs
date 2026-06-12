@@ -60,30 +60,30 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
     // ── Information ──────────────────────────────────────────────────────────
     section_header(ui, "Información");
     egui::Grid::new("student_detail_info").num_columns(2).spacing([16.0, 2.0]).show(ui, |ui| {
-        ui.label(egui::RichText::new("Nombre").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(egui::RichText::new("Nombre").color(crate::theme::colors::DARK_GRAY));
         ui.label(&student.first_name);
         ui.end_row();
-        ui.label(egui::RichText::new("Apellido").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(egui::RichText::new("Apellido").color(crate::theme::colors::DARK_GRAY));
         ui.label(&student.last_name);
         ui.end_row();
-        ui.label(egui::RichText::new("Grupo").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(egui::RichText::new("Grupo").color(crate::theme::colors::DARK_GRAY));
         ui.label(student.age_group.label());
         ui.end_row();
-        ui.label(egui::RichText::new("Email").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(egui::RichText::new("Email").color(crate::theme::colors::DARK_GRAY));
         ui.label(&student.email);
         ui.end_row();
-        ui.label(egui::RichText::new("Teléfono").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(egui::RichText::new("Teléfono").color(crate::theme::colors::DARK_GRAY));
         ui.label(&student.phone);
         ui.end_row();
         if let Some(n) = &student.notes {
-            ui.label(egui::RichText::new("Notas").color(crate::theme::colors::TEXT_MUTED));
+            ui.label(egui::RichText::new("Notas").color(crate::theme::colors::DARK_GRAY));
             ui.label(n.as_str());
             ui.end_row();
         }
-        ui.label(egui::RichText::new("Creado").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(egui::RichText::new("Creado").color(crate::theme::colors::DARK_GRAY));
         ui.label(fmt_dt(student.created_at));
         ui.end_row();
-        ui.label(egui::RichText::new("Editado").color(crate::theme::colors::TEXT_MUTED));
+        ui.label(egui::RichText::new("Editado").color(crate::theme::colors::DARK_GRAY));
         ui.label(fmt_dt(student.updated_at));
         ui.end_row();
     });
@@ -113,9 +113,9 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                 }
             }
             let (color, sign) = if state.balance_cents >= 0 {
-                (crate::theme::colors::SUCCESS, "+")
+                (crate::theme::colors::GREEN, "+")
             } else {
-                (crate::theme::colors::ERROR, "")
+                (crate::theme::colors::RED, "")
             };
             ui.colored_label(color, format!("{sign}{}", fmt_ars(state.balance_cents)));
         });
@@ -184,7 +184,7 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                     .map(|c| c.month_price_cents)
                 {
                     ui.add_space(4.0);
-                    ui.colored_label(crate::theme::colors::TEXT_MUTED, format!("Precio mensual: {}", fmt_ars(price)));
+                    ui.colored_label(crate::theme::colors::DARK_GRAY, format!("Precio mensual: {}", fmt_ars(price)));
                 }
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
@@ -320,20 +320,20 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
                     row.col(|ui| {
                         match entry.kind {
                             LedgerKind::Debt => ui.colored_label(
-                                crate::theme::colors::ERROR,
+                                crate::theme::colors::RED,
                                 format!("-{}", fmt_ars(entry.amount_cents)),
                             ),
                             LedgerKind::Credit => ui.colored_label(
-                                crate::theme::colors::SUCCESS,
+                                crate::theme::colors::GREEN,
                                 format!("+{}", fmt_ars(entry.amount_cents)),
                             ),
                         };
                     });
                     row.col(|ui| {
                         let color = if entry.running_balance < 0 {
-                            crate::theme::colors::ERROR
+                            crate::theme::colors::RED
                         } else {
-                            crate::theme::colors::SUCCESS
+                            crate::theme::colors::GREEN
                         };
                         let sign = if entry.running_balance < 0 { "" } else { "+" };
                         ui.colored_label(color, format!("{sign}{}", fmt_ars(entry.running_balance)));

@@ -1,6 +1,6 @@
+mod details;
 mod form;
 mod list;
-mod view;
 
 use std::sync::Arc;
 
@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[derive(Default, PartialEq)]
-pub enum Mode { #[default] List, View, Create, Edit }
+pub enum Mode { #[default] List, Detail, Create, Edit }
 
 pub struct TeachersState {
     pub mode:              Mode,
@@ -79,8 +79,8 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn TeacherRepo>, state: &mut Teachers
     }
 
     match state.mode {
+        Mode::Detail              => details::show(ui, state),
         Mode::List                => list::show(ui, repo, state, notifs),
-        Mode::View                => view::show(ui, state),
         Mode::Create | Mode::Edit => form::show(ui, repo, state, notifs),
     }
 }

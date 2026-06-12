@@ -29,37 +29,37 @@ pub enum Mode {
 }
 
 pub struct CoursesState {
-    pub mode:         Mode,
+    pub mode:                  Mode,
 
-    // list
-    pub courses:        Vec<CourseDto>,
-    pub needs_reload:   bool,
-    pub filter_name: String,
+    //  list
+    pub courses:               Vec<CourseDto>,
+    pub needs_reload:          bool,
+    pub filter_name:           String,
 
-    // course form
-    pub editing_id:   Option<Uuid>,
-    pub name:         String,
-    pub teacher_id:   Option<Uuid>,
-    pub teachers:     Vec<TeacherDto>,
-    pub age_group:    AgeGroup,
-    pub capacity:     String,
-    pub price:        String,
-    pub class_price:  String,
-    pub course_notes: String,
+    //  course form
+    pub editing_id:            Option<Uuid>,
+    pub name:                  String,
+    pub teacher_id:            Option<Uuid>,
+    pub teachers:              Vec<TeacherDto>,
+    pub age_group:             AgeGroup,
+    pub capacity:              String,
+    pub price:                 String,
+    pub class_price:           String,
+    pub course_notes:          String,
 
-    // course detail
-    pub selected_course:      Option<CourseDto>,
-    pub periods:              Vec<CoursePeriodDto>,
-    pub needs_reload_periods: bool,
+    //  course detail
+    pub selected_course:       Option<CourseDto>,
+    pub periods:               Vec<CoursePeriodDto>,
+    pub needs_reload_periods:  bool,
 
-    // period form
-    pub period_year:      i32,
-    pub period_month:     u32,
-    pub show_period_form: bool,
+    //  period form
+    pub period_year:           i32,
+    pub period_month:          u32,
+    pub show_period_form:      bool,
 
-    // read-only timestamps
-    pub created_at: String,
-    pub updated_at: String,
+    //  read-only timestamps
+    pub created_at:            String,
+    pub updated_at:            String,
 
     pub confirm_delete:        Option<Uuid>,
     pub confirm_delete_period: Option<Uuid>,

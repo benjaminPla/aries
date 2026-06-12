@@ -6,21 +6,25 @@ use postgres::Client;
 use uuid::Uuid;
 
 use crate::{
-    application::course_period::{
-        create::{CoursePeriodCreateInput, CoursePeriodCreateUseCase},
-        delete::CoursePeriodDeleteUseCase,
-        get_by_course::CoursePeriodGetByCourseUseCase,
+    application::{
+        course_period::{
+            create::{CoursePeriodCreateInput, CoursePeriodCreateUseCase},
+            delete::CoursePeriodDeleteUseCase,
+            get_by_course::CoursePeriodGetByCourseUseCase,
+        },
+        teacher::get_all::TeacherGetAllUseCase,
     },
     presentation::table::{self, Column},
     presentation::{confirm_delete_modal, push_error, push_success, section_header, Notifications},
+    theme::colors::DARK_GRAY
 };
 
 use super::{format_price, make_course_period_repo, CoursesState, Mode};
 
 pub fn show(
-    ui: &mut egui::Ui,
+    ui:     &mut egui::Ui,
     client: &Arc<Mutex<Client>>,
-    state: &mut CoursesState,
+    state:  &mut CoursesState,
     notifs: &mut Notifications,
 ) {
     let course = match &state.selected_course {
@@ -31,6 +35,12 @@ pub fn show(
         }
     };
 
+    if state.teachers.is_empty() {
+        if let Ok(ts) = TeacherGetAllUseCase::new(super::make_teacher_repo(client)).execute() {
+            state.teachers = ts;
+        }
+    }
+
     if state.needs_reload_periods {
         state.needs_reload_periods = false;
         match CoursePeriodGetByCourseUseCase::new(make_course_period_repo(client)).execute(course.id) {
@@ -39,9 +49,8 @@ pub fn show(
         }
     }
 
-    // ── Header ────────────────────────────────────────────────────────────────
+    // ── Navigation ────────────────────────────────────────────────────────────
     if ui.button("<- Volver").clicked() {
-        state.needs_reload     = true;
         state.mode             = Mode::List;
         state.selected_course  = None;
         state.periods          = Vec::new();
@@ -52,24 +61,56 @@ pub fn show(
 
     // ── Information ──────────────────────────────────────────────────────────
     section_header(ui, "Información");
-    egui::Grid::new("course_detail_info").num_columns(2).show(ui, |ui| {
-        ui.label("Nombre");        ui.label(&course.name);                               ui.end_row();
-        ui.label("Grupo");         ui.label(course.age_group.label());                   ui.end_row();
-        ui.label("Capacidad");     ui.label(course.capacity.to_string());                ui.end_row();
-        ui.label("Precio mensual");ui.label(format_price(course.month_price_cents));     ui.end_row();
-        ui.label("Precio clase");  ui.label(format_price(course.class_price_cents));     ui.end_row();
+    egui::Grid::new("course_details").num_columns(2).show(ui, |ui| {
+        let teacher_name = state.teachers.iter()
+            .find(|t| t.id == course.teacher_id)
+            .map(|t| format!("{} {}", t.first_name, t.last_name))
+            .unwrap_or_else(|| course.teacher_id.to_string());
+
+        ui.label(egui::RichText::new("Nombre").color(DARK_GRAY));
+        ui.label(&course.name);
+        ui.end_row();
+
+        ui.label(egui::RichText::new("Profesor").color(DARK_GRAY));
+        ui.label(teacher_name);
+        ui.end_row();
+
+        ui.label(egui::RichText::new("Grupo").color(DARK_GRAY));
+        ui.label(course.age_group.label());
+        ui.end_row();
+
+        ui.label(egui::RichText::new("Capacidad").color(DARK_GRAY));
+        ui.label(course.capacity.to_string());
+        ui.end_row();
+
+        ui.label(egui::RichText::new("Precio menusal").color(DARK_GRAY));
+        ui.label(format_price(course.month_price_cents));
+        ui.end_row();
+
+        ui.label(egui::RichText::new("Precio clase").color(DARK_GRAY));
+        ui.label(format_price(course.class_price_cents));
+        ui.end_row();
+
         if let Some(n) = &course.notes {
-            ui.label("Notas");     ui.label(n);                                          ui.end_row();
+            ui.label(egui::RichText::new("Notas").color(DARK_GRAY));
+            ui.label(n);
+            ui.end_row();
         }
-        ui.label("Creado");        ui.label(crate::presentation::fmt_dt(course.created_at)); ui.end_row();
-        ui.label("Editado");       ui.label(crate::presentation::fmt_dt(course.updated_at)); ui.end_row();
+
+        ui.label(egui::RichText::new("Creado").color(DARK_GRAY));
+        ui.label(crate::presentation::fmt_dt(course.created_at));
+        ui.end_row();
+
+        ui.label(egui::RichText::new("Editado").color(DARK_GRAY));
+        ui.label(crate::presentation::fmt_dt(course.updated_at));
+        ui.end_row();
     });
     ui.add_space(4.0);
     ui.separator();
 
-    // ── Períodos section header ───────────────────────────────────────────────
+    // ── Periods ──────────────────────────────────────────────────────────────
     ui.horizontal(|ui| {
-        section_header(ui, "Períodos");
+        ui.label(egui::RichText::new("Períodos").size(crate::theme::sizes::FONT_SIZE_SMALL).strong());
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button("+ Nuevo período").clicked() {
                 state.show_period_form = true;
@@ -161,11 +202,11 @@ pub fn show(
                     row.col(|ui| {
                         let today = chrono::Local::now().date_naive();
                         if p.start_date > today {
-                            ui.colored_label(crate::theme::colors::WARNING, "Futuro");
+                            ui.colored_label(crate::theme::colors::YELLOW, "Futuro");
                         } else if p.end_date >= today {
-                            ui.colored_label(crate::theme::colors::SUCCESS, "Activo");
+                            ui.colored_label(crate::theme::colors::GREEN, "Activo");
                         } else {
-                            ui.colored_label(crate::theme::colors::TEXT_MUTED, "Finalizado");
+                            ui.colored_label(crate::theme::colors::DARK_GRAY, "Finalizado");
                         }
                     });
                     row.col(|ui| {

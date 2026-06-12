@@ -29,7 +29,7 @@ use crate::{
 
 #[derive(Clone)]
 pub enum UpdateState {
-    Available(String),   // version string of the new release
+    Available(String),
     Downloading,
     Done,
     Failed(String),
@@ -171,22 +171,22 @@ impl App {
 
         let (color, msg, show_button) = match &state {
             UpdateState::Available(v) => (
-                colors::WARNING,
+                colors::YELLOW,
                 format!("Nueva versión disponible: v{v}"),
                 true,
             ),
             UpdateState::Downloading => (
-                colors::WARNING,
+                colors::YELLOW,
                 "Descargando actualización… no cerrar la aplicación.".into(),
                 false,
             ),
             UpdateState::Done => (
-                colors::SUCCESS,
+                colors::GREEN,
                 "Actualización lista. Reiniciar para aplicar.".into(),
                 false,
             ),
             UpdateState::Failed(e) => (
-                colors::ERROR,
+                colors::RED,
                 format!("Error al actualizar: {e}"),
                 false,
             ),
@@ -212,30 +212,28 @@ impl App {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        use crate::theme::{colors, panel_frame};
+        use crate::theme::{colors, sizes};
 
         egui::Panel::left("menu")
-            .default_size(crate::theme::sizes::SIDEBAR_WIDTH)
-            .resizable(true)
-            .frame(panel_frame(colors::SIDEBAR))
+            .default_size(100.0)
+            .resizable(false)
+            .frame(egui::Frame::new().fill(colors::BLACK).inner_margin(egui::Margin::same(sizes::MARGIN_NORMAL)))
             .show_inside(ui, |ui| {
-                ui.heading("Babushka");
-                ui.add_space(2.0);
-                ui.separator();
-                ui.add_space(4.0);
-                ui.selectable_value(&mut self.current_view, View::Students, "Alumnos");
-                ui.selectable_value(&mut self.current_view, View::Courses,  "Cursos");
-                ui.selectable_value(&mut self.current_view, View::Teachers, "Profesores");
+                ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
+                    ui.selectable_value(&mut self.current_view, View::Students, "Alumnos");
+                    ui.selectable_value(&mut self.current_view, View::Courses,  "Cursos");
+                    ui.selectable_value(&mut self.current_view, View::Teachers, "Profesores");
+                })
             });
 
         egui::CentralPanel::default()
-            .frame(panel_frame(colors::BACKGROUND))
+            .frame(egui::Frame::new().fill(colors::BLACK).inner_margin(egui::Margin::same(sizes::MARGIN_NORMAL)))
             .show_inside(ui, |ui| {
                 self.render_update_banner(ui);
                 render_notifications(ui, &mut self.notifications);
                 match self.current_view {
-                    View::Students => students::show(ui, &self.student_repo, &self.client, &mut self.students_state, &mut self.notifications),
                     View::Courses  => courses::show(ui, &self.course_repo,  &self.client, &mut self.courses_state,   &mut self.notifications),
+                    View::Students => students::show(ui, &self.student_repo, &self.client, &mut self.students_state, &mut self.notifications),
                     View::Teachers => teachers::show(ui, &self.teacher_repo, &mut self.teachers_state, &mut self.notifications),
                 }
             });

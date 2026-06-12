@@ -4,9 +4,10 @@ use eframe::egui;
 use postgres::Client;
 use uuid::Uuid;
 
+use egui_extras::{Column, TableBuilder};
+
 use crate::application::course::delete::CourseDeleteUseCase;
 use crate::presentation::{confirm_delete_modal, fmt_dt, push_error, push_success, Notifications};
-use crate::presentation::table::{self, Column};
 
 use crate::domain::course::repository::CourseRepo;
 
@@ -40,33 +41,35 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, client: &Arc<Mutex<Cl
 
     let mut action: Option<(Action, Uuid)> = None;
 
-    table::builder(ui)
+    TableBuilder::new(ui)
+        .striped(true)
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .column(Column::remainder())
+        .column(Column::remainder())
+        .column(Column::remainder())
+        .column(Column::remainder())
         .column(Column::remainder())
         .column(Column::auto())
-        .column(Column::auto())
-        .column(Column::auto())
-        .column(Column::auto())
-        .column(Column::auto())
-        .header(table::header_height(), |mut h| {
-            h.col(|ui| table::head_filter(ui, "Nombre", &mut state.filter_name));
-            h.col(|ui| table::head(ui, "Grupo"));
-            h.col(|ui| table::head(ui, "Cap."));
-            h.col(|ui| table::head(ui, "Mensual"));
-            h.col(|ui| table::head(ui, "Por clase"));
-            h.col(|ui| table::head(ui, "Acciones"));
+        .header(20.0, |mut h| {
+            h.col(|ui| { ui.label("Nombre"); });
+            h.col(|ui| { ui.label("Grupo"); });
+            h.col(|ui| { ui.label("Cap."); });
+            h.col(|ui| { ui.label("Mensual"); });
+            h.col(|ui| { ui.label("Por clase"); });
+            h.col(|ui| { ui.label("Acciones"); });
         })
         .body(|mut body| {
             for c in &visible {
-                body.row(table::row_height(), |mut row| {
+                body.row(18.0, |mut row| {
                     row.col(|ui| { ui.label(&c.name); });
                     row.col(|ui| { ui.label(c.age_group.label()); });
                     row.col(|ui| { ui.label(c.capacity.to_string()); });
                     row.col(|ui| { ui.label(format_price(c.month_price_cents)); });
                     row.col(|ui| { ui.label(format_price(c.class_price_cents)); });
                     row.col(|ui| {
-                        if ui.small_button("Ver").clicked()      { action = Some((Action::Open,   c.id)); }
-                        if ui.small_button("Editar").clicked()   { action = Some((Action::Edit,   c.id)); }
-                        if ui.small_button("Eliminar").clicked() { action = Some((Action::Delete, c.id)); }
+                        if ui.small_button(egui_phosphor::regular::EYE).clicked()           { action = Some((Action::Open,   c.id)); }
+                        if ui.small_button(egui_phosphor::regular::PENCIL_SIMPLE).clicked() { action = Some((Action::Edit,   c.id)); }
+                        if ui.small_button(egui_phosphor::regular::TRASH).clicked()         { action = Some((Action::Delete, c.id)); }
                     });
                 });
             }
