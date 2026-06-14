@@ -1,6 +1,6 @@
 mod detail;
-mod form;
 mod list;
+mod form;
 
 use std::sync::{Arc, Mutex};
 
@@ -9,25 +9,22 @@ use eframe::egui;
 use postgres::Client;
 use uuid::Uuid;
 
-use crate::{
-    application::{
-        course::dto::CourseDto,
-        course_period::dto::CoursePeriodDto,
-        student::{dto::StudentDto, get_all::StudentGetAllUseCase},
-        student_ledger::LedgerEntry,
-    },
-    domain::student::{repository::StudentRepo, AgeGroup},
-    infrastructure::{
-        course::CoursePgRepo,
-        course_period::CoursePeriodPgRepo,
-        enrollment::EnrollmentPgRepo,
-        payment::PaymentPgRepo,
-    },
-    presentation::{push_error, Notifications},
-};
+use crate::application::course::dto::CourseDto;
+use crate::application::course_period::dto::CoursePeriodDto;
+use crate::application::student::dto::StudentDto;
+use crate::application::student::get_all::StudentGetAllUseCase;
+use crate::application::student_ledger::LedgerEntry;
+use crate::domain::student::repository::StudentRepo;
+use crate::domain::student::AgeGroup;
+use crate::infrastructure::course::CoursePgRepo;
+use crate::infrastructure::course_period::CoursePeriodPgRepo;
+use crate::infrastructure::enrollment::EnrollmentPgRepo;
+use crate::infrastructure::payment::PaymentPgRepo;
+use crate::presentation::push_error;
+use crate::presentation::Notifications;
 
 #[derive(Default, PartialEq)]
-pub enum Mode { #[default] List, Create, Edit, Detail }
+pub enum Mode { #[default] List, Detail }
 
 pub struct StudentsState {
     pub mode:              Mode,
@@ -37,7 +34,8 @@ pub struct StudentsState {
     pub filter_last_name:  String,
     pub filter_email:      String,
 
-    // form
+    // create/edit modal
+    pub show_modal: bool,
     pub editing_id: Option<Uuid>,
     pub age_group:  AgeGroup,
     pub first_name: String,
@@ -54,7 +52,7 @@ pub struct StudentsState {
     pub balance_cents:       i32,
     pub needs_reload_ledger: bool,
 
-    // enroll form
+    // enroll modal
     pub show_enroll_form:     bool,
     pub enroll_courses:       Vec<CourseDto>,
     pub enroll_sel_course:    Option<Uuid>,
@@ -63,7 +61,7 @@ pub struct StudentsState {
     pub enroll_sel_period:    Option<Uuid>,
     pub enroll_period_filter: String,
 
-    // payment form
+    // payment modal
     pub show_payment_form:   bool,
     pub payment_amount:      String,
     pub payment_method:      String,
@@ -87,6 +85,7 @@ impl Default for StudentsState {
             filter_first_name: String::new(),
             filter_last_name:  String::new(),
             filter_email:      String::new(),
+            show_modal:        false,
             editing_id:        None,
             age_group:         AgeGroup::Adult,
             first_name:        String::new(),
@@ -151,6 +150,7 @@ pub fn clear_detail_state(state: &mut StudentsState) {
 }
 
 pub fn clear_form(state: &mut StudentsState) {
+    state.show_modal = false;
     state.editing_id = None;
     state.age_group  = AgeGroup::Adult;
     state.first_name = String::new();
@@ -172,8 +172,8 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn StudentRepo>, client: &Arc<Mutex<C
     }
 
     match state.mode {
-        Mode::List                => list::show(ui, repo, state, notifs),
-        Mode::Create | Mode::Edit => form::show(ui, repo, state, notifs),
-        Mode::Detail              => detail::show(ui, client, state, notifs),
+        Mode::List   => list::show(ui, repo, state, notifs),
+        Mode::Detail => detail::show(ui, client, state, notifs),
     }
+    form::show(ui.ctx(), repo, state, notifs);
 }

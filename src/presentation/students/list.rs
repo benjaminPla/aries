@@ -9,7 +9,7 @@ use crate::application::student::delete::StudentDeleteUseCase;
 use crate::domain::student::repository::StudentRepo;
 use crate::presentation::{confirm_delete_modal, fmt_dt, push_error, push_success, Notifications};
 
-use super::{Mode, StudentsState, clear_form};
+use super::{StudentsState, clear_form};
 
 enum Action { Open, Edit, Delete }
 
@@ -19,7 +19,7 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn StudentRepo>, state: &mut Students
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button("+ Nuevo").clicked() {
                 clear_form(state);
-                state.mode = Mode::Create;
+                state.show_modal = true;
             }
         });
     });
@@ -95,7 +95,7 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn StudentRepo>, state: &mut Students
                     state.created_at = fmt_dt(s.created_at);
                     state.updated_at = fmt_dt(s.updated_at);
                     state.editing_id = Some(id);
-                    state.mode       = Mode::Edit;
+                    state.show_modal = true;
                 }
             }
             Action::Delete => { state.confirm_delete = Some(id); }

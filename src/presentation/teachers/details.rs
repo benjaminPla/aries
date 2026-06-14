@@ -14,47 +14,43 @@ pub fn show(ui: &mut egui::Ui, state: &mut TeachersState) {
         return;
     };
 
-    // ── Navigation ────────────────────────────────────────────────────────────
-
     if ui.button("<- Volver").clicked() {
         state.viewing_id = None;
         state.mode       = Mode::List;
     }
     ui.separator();
 
-    // ── Information ──────────────────────────────────────────────────────────
+    ui.label(egui::RichText::new("Información").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_BIG));
 
-    ui.label(egui::RichText::new("Información").size(sizes::FONT_SIZE_BIG).color(colors::LIGHT_GRAY).strong());
-
-    egui::Grid::new("teacher_details").num_columns(2).spacing([sizes::SPACING_NORMAL, sizes::SPACING_EXTRA_SMAL]).show(ui, |ui| {
-        ui.label(egui::RichText::new("Nombre").color(colors::LIGHT_GRAY));
-        ui.label(&teacher.first_name);
+    egui::Grid::new("teacher_details").num_columns(2).spacing([sizes::SPACING_NORMAL, sizes::SPACING_SMALL]).show(ui, |ui| {
+        ui.label(egui::RichText::new("Nombre").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(&teacher.first_name).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
-        ui.label(egui::RichText::new("Apellido").color(colors::LIGHT_GRAY));
-        ui.label(&teacher.last_name);
+        ui.label(egui::RichText::new("Apellido").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(&teacher.last_name).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
-        ui.label(egui::RichText::new("Email").color(colors::LIGHT_GRAY));
-        ui.label(&teacher.email);
+        ui.label(egui::RichText::new("Email").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(&teacher.email).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
-       
-        ui.label(egui::RichText::new("Teléfono").color(colors::LIGHT_GRAY));
-        ui.label(&teacher.phone);
+
+        ui.label(egui::RichText::new("Teléfono").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(&teacher.phone).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
         if let Some(n) = &teacher.notes {
-            ui.label(egui::RichText::new("Notas").color(colors::LIGHT_GRAY));
-            ui.label(n.as_str());
+            ui.label(egui::RichText::new("Notas").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+            ui.label(egui::RichText::new(n.as_str()).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
             ui.end_row();
         }
 
-        ui.label(egui::RichText::new("Creado").color(colors::LIGHT_GRAY));
-        ui.label(fmt_dt(teacher.created_at));
+        ui.label(egui::RichText::new("Creado").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(fmt_dt(teacher.created_at)).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
-        ui.label(egui::RichText::new("Editado").color(colors::LIGHT_GRAY));
-        ui.label(fmt_dt(teacher.updated_at));
+        ui.label(egui::RichText::new("Editado").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(fmt_dt(teacher.updated_at)).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
     });
 }

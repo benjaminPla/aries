@@ -1,6 +1,6 @@
 mod detail;
-mod form;
 mod list;
+mod form;
 
 use std::sync::{Arc, Mutex};
 
@@ -9,57 +9,56 @@ use eframe::egui;
 use postgres::Client;
 use uuid::Uuid;
 
-use crate::{
-    application::{
-        course::{dto::CourseDto, get_all::CourseGetAllUseCase},
-        course_period::dto::CoursePeriodDto,
-        teacher::dto::TeacherDto,
-    },
-    domain::{course::repository::CourseRepo, shared::value_objects::age_group::AgeGroup},
-    infrastructure::{course_period::CoursePeriodPgRepo, teacher::TeacherPgRepo},
-    presentation::{push_error, Notifications},
-};
+use crate::application::course::dto::CourseDto;
+use crate::application::course::get_all::CourseGetAllUseCase;
+use crate::application::course_period::dto::CoursePeriodDto;
+use crate::application::teacher::dto::TeacherDto;
+use crate::domain::course::repository::CourseRepo;
+use crate::domain::shared::value_objects::age_group::AgeGroup;
+use crate::infrastructure::course_period::CoursePeriodPgRepo;
+use crate::infrastructure::teacher::TeacherPgRepo;
+use crate::presentation::push_error;
+use crate::presentation::Notifications;
 
 #[derive(Default, PartialEq)]
 pub enum Mode {
     #[default] List,
-    CreateCourse,
-    EditCourse,
     Detail,
 }
 
 pub struct CoursesState {
-    pub mode:                  Mode,
+    pub mode:         Mode,
 
-    //  list
-    pub courses:               Vec<CourseDto>,
-    pub needs_reload:          bool,
-    pub filter_name:           String,
+    // list
+    pub courses:      Vec<CourseDto>,
+    pub needs_reload: bool,
+    pub filter_name:  String,
 
-    //  course form
-    pub editing_id:            Option<Uuid>,
-    pub name:                  String,
-    pub teacher_id:            Option<Uuid>,
-    pub teachers:              Vec<TeacherDto>,
-    pub age_group:             AgeGroup,
-    pub capacity:              String,
-    pub price:                 String,
-    pub class_price:           String,
-    pub course_notes:          String,
+    // create/edit modal
+    pub show_modal:   bool,
+    pub editing_id:   Option<Uuid>,
+    pub name:         String,
+    pub teacher_id:   Option<Uuid>,
+    pub teachers:     Vec<TeacherDto>,
+    pub age_group:    AgeGroup,
+    pub capacity:     String,
+    pub price:        String,
+    pub class_price:  String,
+    pub course_notes: String,
 
-    //  course detail
-    pub selected_course:       Option<CourseDto>,
-    pub periods:               Vec<CoursePeriodDto>,
-    pub needs_reload_periods:  bool,
+    // detail
+    pub selected_course:      Option<CourseDto>,
+    pub periods:              Vec<CoursePeriodDto>,
+    pub needs_reload_periods: bool,
 
-    //  period form
-    pub period_year:           i32,
-    pub period_month:          u32,
-    pub show_period_form:      bool,
+    // period modal
+    pub period_year:      i32,
+    pub period_month:     u32,
+    pub show_period_form: bool,
 
-    //  read-only timestamps
-    pub created_at:            String,
-    pub updated_at:            String,
+    // timestamps (edit only)
+    pub created_at: String,
+    pub updated_at: String,
 
     pub confirm_delete:        Option<Uuid>,
     pub confirm_delete_period: Option<Uuid>,
@@ -69,27 +68,28 @@ impl Default for CoursesState {
     fn default() -> Self {
         let now = chrono::Local::now();
         Self {
-            mode:                  Mode::List,
-            courses:               Vec::new(),
-            needs_reload:          true,
-            filter_name:           String::new(),
-            editing_id:            None,
-            name:                  String::new(),
-            teacher_id:            None,
-            teachers:              Vec::new(),
-            age_group:             AgeGroup::Adult,
-            capacity:              String::new(),
-            price:                 String::new(),
-            class_price:           String::new(),
-            course_notes:          String::new(),
-            selected_course:       None,
-            periods:               Vec::new(),
-            needs_reload_periods:  false,
-            period_year:           now.year(),
-            period_month:          now.month(),
-            show_period_form:      false,
-            created_at:            String::new(),
-            updated_at:            String::new(),
+            mode:         Mode::List,
+            courses:      Vec::new(),
+            needs_reload: true,
+            filter_name:  String::new(),
+            show_modal:   false,
+            editing_id:   None,
+            name:         String::new(),
+            teacher_id:   None,
+            teachers:     Vec::new(),
+            age_group:    AgeGroup::Adult,
+            capacity:     String::new(),
+            price:        String::new(),
+            class_price:  String::new(),
+            course_notes: String::new(),
+            selected_course:      None,
+            periods:              Vec::new(),
+            needs_reload_periods: false,
+            period_year:      now.year(),
+            period_month:     now.month(),
+            show_period_form: false,
+            created_at: String::new(),
+            updated_at: String::new(),
             confirm_delete:        None,
             confirm_delete_period: None,
         }
@@ -110,6 +110,7 @@ pub fn parse_price(s: &str) -> Option<i32> {
 }
 
 pub fn clear_course_form(state: &mut CoursesState) {
+    state.show_modal   = false;
     state.editing_id   = None;
     state.name         = String::new();
     state.teacher_id   = None;
@@ -132,8 +133,8 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, client: &Arc<Mutex<Cl
     }
 
     match state.mode {
-        Mode::List                            => list::show(ui, repo, client, state, notifs),
-        Mode::CreateCourse | Mode::EditCourse => form::show(ui, repo, state, notifs),
-        Mode::Detail                          => detail::show(ui, client, state, notifs),
+        Mode::List   => list::show(ui, repo, client, state, notifs),
+        Mode::Detail => detail::show(ui, client, state, notifs),
     }
+    form::show(ui.ctx(), repo, state, notifs);
 }

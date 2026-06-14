@@ -5,26 +5,27 @@ use eframe::egui;
 use postgres::Client;
 use uuid::Uuid;
 
-use crate::{
-    application::{
-        course::get_all::CourseGetAllUseCase,
-        course_period::get_by_course::CoursePeriodGetByCourseUseCase,
-        enrollment::{
-            create::{EnrollmentCreateInput, EnrollmentCreateUseCase},
-            delete::EnrollmentDeleteUseCase,
-        },
-        payment::{
-            create::{PaymentCreateInput, PaymentCreateUseCase},
-            delete::PaymentDeleteUseCase,
-        },
-        student_ledger::{LedgerKind, StudentLedgerUseCase},
-    },
-    presentation::{
-        confirm_delete_modal, date_selector, fmt_ars, fmt_dt, push_error, push_success,
-        section_header, Notifications,
-    },
-    presentation::table::{self, Column},
-};
+use crate::theme::{colors, sizes};
+use crate::application::course::get_all::CourseGetAllUseCase;
+use crate::application::course_period::get_by_course::CoursePeriodGetByCourseUseCase;
+use crate::application::enrollment::create::EnrollmentCreateInput;
+use crate::application::enrollment::create::EnrollmentCreateUseCase;
+use crate::application::enrollment::delete::EnrollmentDeleteUseCase;
+use crate::application::payment::create::PaymentCreateInput;
+use crate::application::payment::create::PaymentCreateUseCase;
+use crate::application::payment::delete::PaymentDeleteUseCase;
+use crate::application::student_ledger::LedgerKind;
+use crate::application::student_ledger::StudentLedgerUseCase;
+use crate::presentation::confirm_delete_modal;
+use crate::presentation::date_selector;
+use crate::presentation::fmt_ars;
+use crate::presentation::fmt_dt;
+use crate::presentation::push_error;
+use crate::presentation::push_success;
+use crate::presentation::section_header;
+use crate::presentation::Notifications;
+use crate::presentation::table;
+use crate::presentation::table::Column;
 
 use super::{
     Mode, StudentsState,
@@ -59,32 +60,32 @@ pub fn show(ui: &mut egui::Ui, client: &Arc<Mutex<Client>>, state: &mut Students
 
     // ── Information ──────────────────────────────────────────────────────────
     section_header(ui, "Información");
-    egui::Grid::new("student_detail_info").num_columns(2).spacing([16.0, 2.0]).show(ui, |ui| {
-        ui.label(egui::RichText::new("Nombre").color(crate::theme::colors::DARK_GRAY));
-        ui.label(&student.first_name);
+    egui::Grid::new("student_detail_info").num_columns(2).spacing([sizes::SPACING_NORMAL, sizes::SPACING_SMALL]).show(ui, |ui| {
+        ui.label(egui::RichText::new("Nombre").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(&student.first_name).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
-        ui.label(egui::RichText::new("Apellido").color(crate::theme::colors::DARK_GRAY));
-        ui.label(&student.last_name);
+        ui.label(egui::RichText::new("Apellido").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(&student.last_name).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
-        ui.label(egui::RichText::new("Grupo").color(crate::theme::colors::DARK_GRAY));
-        ui.label(student.age_group.label());
+        ui.label(egui::RichText::new("Grupo").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(student.age_group.label()).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
-        ui.label(egui::RichText::new("Email").color(crate::theme::colors::DARK_GRAY));
-        ui.label(&student.email);
+        ui.label(egui::RichText::new("Email").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(&student.email).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
-        ui.label(egui::RichText::new("Teléfono").color(crate::theme::colors::DARK_GRAY));
-        ui.label(&student.phone);
+        ui.label(egui::RichText::new("Teléfono").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(&student.phone).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
         if let Some(n) = &student.notes {
-            ui.label(egui::RichText::new("Notas").color(crate::theme::colors::DARK_GRAY));
-            ui.label(n.as_str());
+            ui.label(egui::RichText::new("Notas").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+            ui.label(egui::RichText::new(n.as_str()).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
             ui.end_row();
         }
-        ui.label(egui::RichText::new("Creado").color(crate::theme::colors::DARK_GRAY));
-        ui.label(fmt_dt(student.created_at));
+        ui.label(egui::RichText::new("Creado").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(fmt_dt(student.created_at)).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
-        ui.label(egui::RichText::new("Editado").color(crate::theme::colors::DARK_GRAY));
-        ui.label(fmt_dt(student.updated_at));
+        ui.label(egui::RichText::new("Editado").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(fmt_dt(student.updated_at)).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
     });
     ui.add_space(4.0);

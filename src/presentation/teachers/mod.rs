@@ -1,20 +1,20 @@
 mod details;
-mod form;
 mod list;
+mod form;
 
 use std::sync::Arc;
 
 use eframe::egui;
 use uuid::Uuid;
 
-use crate::{
-    application::teacher::{dto::TeacherDto, get_all::TeacherGetAllUseCase},
-    domain::teacher::repository::TeacherRepo,
-    presentation::{push_error, Notifications},
-};
+use crate::application::teacher::dto::TeacherDto;
+use crate::application::teacher::get_all::TeacherGetAllUseCase;
+use crate::domain::teacher::repository::TeacherRepo;
+use crate::presentation::push_error;
+use crate::presentation::Notifications;
 
 #[derive(Default, PartialEq)]
-pub enum Mode { #[default] List, Detail, Create, Edit }
+pub enum Mode { #[default] List, Detail }
 
 pub struct TeachersState {
     pub mode:              Mode,
@@ -25,6 +25,7 @@ pub struct TeachersState {
     pub filter_email:      String,
     pub viewing_id:        Option<Uuid>,
     pub editing_id:        Option<Uuid>,
+    pub show_modal:        bool,
     pub first_name:        String,
     pub last_name:         String,
     pub email:             String,
@@ -46,6 +47,7 @@ impl Default for TeachersState {
             filter_email:      String::new(),
             viewing_id:        None,
             editing_id:        None,
+            show_modal:        false,
             first_name:        String::new(),
             last_name:         String::new(),
             email:             String::new(),
@@ -60,6 +62,7 @@ impl Default for TeachersState {
 
 pub fn clear_form(state: &mut TeachersState) {
     state.editing_id = None;
+    state.show_modal = false;
     state.first_name = String::new();
     state.last_name  = String::new();
     state.email      = String::new();
@@ -79,8 +82,8 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn TeacherRepo>, state: &mut Teachers
     }
 
     match state.mode {
-        Mode::Detail              => details::show(ui, state),
-        Mode::List                => list::show(ui, repo, state, notifs),
-        Mode::Create | Mode::Edit => form::show(ui, repo, state, notifs),
+        Mode::List   => list::show(ui, repo, state, notifs),
+        Mode::Detail => details::show(ui, state),
     }
+    form::show(ui.ctx(), repo, state, notifs);
 }

@@ -103,12 +103,11 @@ pub fn confirm_delete_modal(ctx: &egui::Context, pending: &mut Option<Uuid>) -> 
         .collapsible(false)
         .resizable(false)
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-        .frame(
-        egui::Frame::new()
+        .frame(egui::Frame::new()
             .fill(colors::BLACK)
             .stroke(egui::Stroke::new(sizes::STROKE_SMALL, colors::WHITE))
             .inner_margin(egui::Margin::same(sizes::MARGIN_NORMAL))
-    )
+        )
         .show(ctx, |ui| {
             ui.label("¿Eliminar este registro?");
             ui.label("Esta acción no se puede deshacer.");

@@ -23,11 +23,10 @@ pub mod colors {
 pub mod sizes {
     use eframe::egui::CornerRadius;
     pub const CORNER_RADIUS_NONE:      CornerRadius = CornerRadius::ZERO;
-    pub const FONT_SIZE_BIG:           f32          = 14.0;
-    pub const FONT_SIZE_NORMAL:        f32          = 12.0;
-    pub const FONT_SIZE_SMALL:         f32          = 10.0;
+    pub const FONT_SIZE_BIG:           f32          = 12.0;
+    pub const FONT_SIZE_NORMAL:        f32          = 10.0;
+    pub const FONT_SIZE_SMALL:         f32          = 9.0;
     pub const MARGIN_NORMAL:           i8           = 6;
-    pub const SPACING_EXTRA_SMAL:      f32          = 2.0;
     pub const SPACING_NORMAL:          f32          = 8.0;
     pub const SPACING_SMALL:           f32          = 4.0;
     pub const STROKE_SMALL:            f32          = 0.3;
@@ -96,6 +95,7 @@ pub fn apply(ctx: &egui::Context) {
     v.widgets.open.bg_fill                 = colors::LIGHT_GRAY;
     v.widgets.open.bg_stroke               = stroke;
     v.widgets.open.corner_radius           = sizes::CORNER_RADIUS_NONE;
+    v.widgets.open.fg_stroke.color         = colors::BLACK;
     v.widgets.open.fg_stroke               = stroke;
     v.widgets.open.weak_bg_fill            = colors::LIGHT_GRAY;
     v.window_corner_radius                 = sizes::CORNER_RADIUS_NONE;

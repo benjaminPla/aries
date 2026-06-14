@@ -11,7 +11,7 @@ use crate::presentation::{confirm_delete_modal, fmt_dt, push_error, push_success
 
 use crate::domain::course::repository::CourseRepo;
 
-use super::{CoursesState, Mode, clear_course_form, format_price};
+use super::{clear_course_form, format_price, CoursesState, Mode};
 
 enum Action { Open, Edit, Delete }
 
@@ -26,7 +26,7 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, client: &Arc<Mutex<Cl
                 ).execute() {
                     state.teachers = ts;
                 }
-                state.mode = Mode::CreateCourse;
+                state.show_modal = true;
             }
         });
     });
@@ -101,7 +101,7 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn CourseRepo>, client: &Arc<Mutex<Cl
                     ).execute() {
                         state.teachers = ts;
                     }
-                    state.mode = Mode::EditCourse;
+                    state.show_modal = true;
                 }
             }
             Action::Delete => { state.confirm_delete = Some(id); }

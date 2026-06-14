@@ -19,7 +19,7 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn TeacherRepo>, state: &mut Teachers
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button("+ Nuevo").clicked() {
                 clear_form(state);
-                state.mode = Mode::Create;
+                state.show_modal = true;
             }
         });
     });
@@ -87,7 +87,7 @@ pub fn show(ui: &mut egui::Ui, repo: &Arc<dyn TeacherRepo>, state: &mut Teachers
                     state.created_at = fmt_dt(t.created_at);
                     state.updated_at = fmt_dt(t.updated_at);
                     state.editing_id = Some(id);
-                    state.mode       = Mode::Edit;
+                    state.show_modal = true;
                 }
             }
             Action::Delete => { state.confirm_delete = Some(id); }

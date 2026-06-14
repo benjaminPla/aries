@@ -5,19 +5,20 @@ use eframe::egui;
 use postgres::Client;
 use uuid::Uuid;
 
-use crate::{
-    application::{
-        course_period::{
-            create::{CoursePeriodCreateInput, CoursePeriodCreateUseCase},
-            delete::CoursePeriodDeleteUseCase,
-            get_by_course::CoursePeriodGetByCourseUseCase,
-        },
-        teacher::get_all::TeacherGetAllUseCase,
-    },
-    presentation::table::{self, Column},
-    presentation::{confirm_delete_modal, push_error, push_success, section_header, Notifications},
-    theme::colors::DARK_GRAY
-};
+use crate::application::course_period::create::CoursePeriodCreateInput;
+use crate::application::course_period::create::CoursePeriodCreateUseCase;
+use crate::application::course_period::delete::CoursePeriodDeleteUseCase;
+use crate::application::course_period::get_by_course::CoursePeriodGetByCourseUseCase;
+use crate::application::teacher::get_all::TeacherGetAllUseCase;
+use crate::presentation::table;
+use crate::presentation::table::Column;
+use crate::presentation::confirm_delete_modal;
+use crate::presentation::push_error;
+use crate::presentation::push_success;
+use crate::presentation::section_header;
+use crate::presentation::Notifications;
+use crate::theme::colors;
+use crate::theme::sizes;
 
 use super::{format_price, make_course_period_repo, CoursesState, Mode};
 
@@ -61,48 +62,48 @@ pub fn show(
 
     // ── Information ──────────────────────────────────────────────────────────
     section_header(ui, "Información");
-    egui::Grid::new("course_details").num_columns(2).show(ui, |ui| {
+    egui::Grid::new("course_details").num_columns(2).spacing([sizes::SPACING_NORMAL, sizes::SPACING_SMALL]).show(ui, |ui| {
         let teacher_name = state.teachers.iter()
             .find(|t| t.id == course.teacher_id)
             .map(|t| format!("{} {}", t.first_name, t.last_name))
             .unwrap_or_else(|| course.teacher_id.to_string());
 
-        ui.label(egui::RichText::new("Nombre").color(DARK_GRAY));
-        ui.label(&course.name);
+        ui.label(egui::RichText::new("Nombre").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(&course.name).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
-        ui.label(egui::RichText::new("Profesor").color(DARK_GRAY));
-        ui.label(teacher_name);
+        ui.label(egui::RichText::new("Profesor").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(teacher_name).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
-        ui.label(egui::RichText::new("Grupo").color(DARK_GRAY));
-        ui.label(course.age_group.label());
+        ui.label(egui::RichText::new("Grupo").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(course.age_group.label()).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
-        ui.label(egui::RichText::new("Capacidad").color(DARK_GRAY));
-        ui.label(course.capacity.to_string());
+        ui.label(egui::RichText::new("Capacidad").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(course.capacity.to_string()).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
-        ui.label(egui::RichText::new("Precio menusal").color(DARK_GRAY));
-        ui.label(format_price(course.month_price_cents));
+        ui.label(egui::RichText::new("Precio mensual").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(format_price(course.month_price_cents)).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
-        ui.label(egui::RichText::new("Precio clase").color(DARK_GRAY));
-        ui.label(format_price(course.class_price_cents));
+        ui.label(egui::RichText::new("Precio clase").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(format_price(course.class_price_cents)).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
         if let Some(n) = &course.notes {
-            ui.label(egui::RichText::new("Notas").color(DARK_GRAY));
-            ui.label(n);
+            ui.label(egui::RichText::new("Notas").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+            ui.label(egui::RichText::new(n.as_str()).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
             ui.end_row();
         }
 
-        ui.label(egui::RichText::new("Creado").color(DARK_GRAY));
-        ui.label(crate::presentation::fmt_dt(course.created_at));
+        ui.label(egui::RichText::new("Creado").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(crate::presentation::fmt_dt(course.created_at)).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
 
-        ui.label(egui::RichText::new("Editado").color(DARK_GRAY));
-        ui.label(crate::presentation::fmt_dt(course.updated_at));
+        ui.label(egui::RichText::new("Editado").color(colors::LIGHT_GRAY).size(sizes::FONT_SIZE_NORMAL));
+        ui.label(egui::RichText::new(crate::presentation::fmt_dt(course.updated_at)).color(colors::WHITE).size(sizes::FONT_SIZE_NORMAL));
         ui.end_row();
     });
     ui.add_space(4.0);
@@ -110,7 +111,7 @@ pub fn show(
 
     // ── Periods ──────────────────────────────────────────────────────────────
     ui.horizontal(|ui| {
-        ui.label(egui::RichText::new("Períodos").size(crate::theme::sizes::FONT_SIZE_SMALL).strong());
+        ui.label(egui::RichText::new("Períodos").size(sizes::FONT_SIZE_SMALL).strong());
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button("+ Nuevo período").clicked() {
                 state.show_period_form = true;
